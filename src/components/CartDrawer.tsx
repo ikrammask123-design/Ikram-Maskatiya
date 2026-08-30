@@ -90,7 +90,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   };
 
   const handleCopyUpi = () => {
-    navigator.clipboard.writeText('zevioza@upi');
+    navigator.clipboard.writeText('ikrammask2709@sbi');
     setCopiedUpi(true);
     setTimeout(() => setCopiedUpi(false), 2500);
   };
@@ -200,8 +200,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     onClose();
   };
 
-  const upiDeepLink = `upi://pay?pa=zevioza@upi&pn=Zevioza%20Boutique&am=${grandTotal}&cu=INR&tn=Zevioza%20Order`;
-  const upiQrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+  const upiDeepLink = `upi://pay?pa=ikrammask2709@sbi&pn=Ikram%20Maskatiya&am=${grandTotal}&cu=INR&tn=Zevioza%20Boutique%20Order`;
+  const upiQrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=1&data=${encodeURIComponent(
     upiDeepLink
   )}`;
 
@@ -583,7 +583,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                             Scan to Pay {formatPrice(grandTotal, currency)}
                           </span>
                           <span className="text-[9px] text-[#8a7174] mt-0.5">
-                            UPI ID: <span className="font-mono font-semibold text-[#1c1b1b]">zevioza@upi</span>
+                            UPI ID: <span className="font-mono font-semibold text-[#1c1b1b]">ikrammask2709@sbi</span>
                           </span>
                           <button
                             type="button"
