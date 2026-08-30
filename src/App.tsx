@@ -9,6 +9,7 @@ import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartDrawer } from './components/CartDrawer';
 import { SearchModal } from './components/SearchModal';
 import { StylistModal } from './components/StylistModal';
+import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { CategoryId, Product, CartItem, Currency, NotificationItem } from './types';
 import { PRODUCTS, INITIAL_NOTIFICATIONS } from './data/products';
 
@@ -255,6 +256,9 @@ export default function App() {
         isOpen={isStylistModalOpen}
         onClose={() => setIsStylistModalOpen(false)}
       />
+
+      {/* Floating 1-Click WhatsApp Support Widget */}
+      <FloatingWhatsApp phoneNumber="918238023498" />
     </div>
   );
 }

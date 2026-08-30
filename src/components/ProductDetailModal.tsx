@@ -43,27 +43,30 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onAddToCart,
   onBuyNow,
 }) => {
-  if (!product) return null;
-
   const [selectedSize, setSelectedSize] = useState<string>(
-    product.sizes ? product.sizes[0] : 'Free Size'
+    product?.sizes && product.sizes.length > 0 ? product.sizes[0] : 'Free Size'
   );
   const [customStitching, setCustomStitching] = useState<boolean>(false);
   const [customNotes, setCustomNotes] = useState<string>('');
-  const [selectedImage, setSelectedImage] = useState<string>(product.image);
+  const [selectedImage, setSelectedImage] = useState<string>(product?.image || '');
   const [addedToast, setAddedToast] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
   React.useEffect(() => {
     if (product) {
-      setSelectedImage(product.image);
-      setSelectedSize(product.sizes ? product.sizes[0] : 'Free Size');
+      setSelectedImage(product.image || '');
+      setSelectedSize(product.sizes && product.sizes.length > 0 ? product.sizes[0] : 'Free Size');
+      setCustomStitching(false);
+      setCustomNotes('');
     }
-  }, [product?.id, product?.image]);
+  }, [product]);
 
-  const images = product.galleryImages && product.galleryImages.length > 0
+  if (!product) return null;
+
+  const displayImage = selectedImage || product.image;
+  const images = (product.galleryImages && product.galleryImages.length > 0
     ? product.galleryImages
-    : [product.image];
+    : [product.image]).filter(Boolean);
 
   const handleAdd = () => {
     onAddToCart(product, selectedSize, customStitching, customNotes);
@@ -106,7 +109,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         <div className="md:w-1/2 bg-[#f6f3f2] p-5 sm:p-8 flex flex-col items-center justify-between border-b md:border-b-0 md:border-r border-[#f0eded]">
           <div className="relative aspect-3/4 w-full max-h-[380px] md:max-h-[460px] rounded-xl overflow-hidden bg-white shadow-xs">
             <img
-              src={selectedImage}
+              src={displayImage}
               alt={product.name}
               className="w-full h-full object-cover object-center"
             />
@@ -318,8 +321,28 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </button>
             </div>
 
+            {/* WhatsApp Direct Inquiry */}
+            <div className="mt-3 text-center">
+              <a
+                id="btn-modal-whatsapp-inquiry"
+                href={`https://wa.me/918238023498?text=${encodeURIComponent(
+                  `Namaste! 🙏 I am interested in ordering: *${product.name}* (Price: ₹${product.price}${
+                    selectedSize ? `, Size: ${selectedSize}` : ''
+                  }${customStitching ? ', with Custom Stitching' : ''}). Please confirm stock and delivery timeline!`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-emerald-700 hover:text-emerald-800 font-semibold bg-emerald-50 hover:bg-emerald-100/80 px-4 py-2 rounded-full border border-emerald-200 transition-all"
+              >
+                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                  <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.04 14.69 2 12.04 2ZM12.04 20.15C10.56 20.15 9.11 19.76 7.85 19.01L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.8 13.47 3.8 11.91C3.8 7.37 7.5 3.67 12.04 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15ZM16.56 14.39C16.31 14.26 15.09 13.66 14.86 13.58C14.63 13.5 14.47 13.46 14.31 13.7C14.15 13.94 13.68 14.5 13.54 14.66C13.4 14.82 13.26 14.84 13.01 14.72C12.76 14.6 11.96 14.34 11.01 13.49C10.27 12.83 9.77 12.01 9.63 11.77C9.49 11.53 9.61 11.4 9.74 11.27C9.85 11.16 9.99 10.98 10.12 10.83C10.25 10.68 10.29 10.57 10.37 10.41C10.45 10.25 10.41 10.11 10.35 9.99C10.29 9.87 9.81 8.69 9.61 8.21C9.41 7.73 9.21 7.8 9.06 7.79C8.92 7.78 8.76 7.78 8.6 7.78C8.44 7.78 8.18 7.84 7.96 8.08C7.74 8.32 7.12 8.9 7.12 10.08C7.12 11.26 7.98 12.4 8.1 12.56C8.22 12.72 9.8 15.15 12.22 16.19C12.8 16.44 13.25 16.59 13.6 16.7C14.18 16.89 14.71 16.86 15.13 16.8C15.6 16.73 16.56 16.22 16.76 15.65C16.96 15.08 16.96 14.6 16.9 14.5C16.84 14.4 16.71 14.34 16.56 14.21V14.39Z" />
+                </svg>
+                <span>Ask Stylist on WhatsApp</span>
+              </a>
+            </div>
+
             {/* Delivery Assurance */}
-            <div className="flex items-center justify-center gap-4 mt-4 text-[11px] text-[#8a7174]">
+            <div className="flex items-center justify-center gap-4 mt-3 text-[11px] text-[#8a7174]">
               <span className="flex items-center gap-1">
                 <Truck className="w-3.5 h-3.5 text-[#6d0026]" /> Complimentary Luxury Packaging
               </span>

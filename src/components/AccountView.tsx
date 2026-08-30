@@ -292,6 +292,22 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 Update Measurements →
               </button>
             </div>
+            <div className="p-4 bg-emerald-50/70 rounded-xl border border-emerald-200">
+              <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider mb-1">
+                Instant WhatsApp Concierge
+              </h4>
+              <p className="text-xs text-emerald-800 mb-3">
+                Chat 1-on-1 with our head stylist on WhatsApp for real-time recommendations, fabric swatches & custom stitching orders.
+              </p>
+              <a
+                href="https://wa.me/918238023498?text=Namaste!%20I%20need%20assistance%20with%20custom%20styling%20and%20orders."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 flex items-center gap-1.5"
+              >
+                <span>Chat on WhatsApp (+91 82380 23498)</span> →
+              </a>
+            </div>
           </div>
         </div>
       )}
@@ -318,7 +334,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 <p className="text-xs text-[#574144] mt-1">
                   42, Gulmohar Enclave, Malabar Hill, Mumbai, Maharashtra - 400006
                 </p>
-                <p className="text-xs text-[#8a7174] mt-0.5">+91 98765 43210</p>
+                <p className="text-xs text-[#8a7174] mt-0.5">+91 82380 23498</p>
               </div>
             </div>
           </div>

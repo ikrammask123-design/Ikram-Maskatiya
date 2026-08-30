@@ -300,8 +300,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </li>
               <li className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-[#6d0026] flex-shrink-0" />
-                <a href="tel:+919876543210" className="hover:text-[#6d0026]">
-                  +91 98765 43210
+                <a href="tel:+918238023498" className="hover:text-[#6d0026]">
+                  +91 82380 23498
+                </a>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <span className="w-4 h-4 text-emerald-600 font-bold text-xs flex items-center justify-center">WA</span>
+                <a
+                  href="https://wa.me/918238023498?text=Hello%20Zevioza%20Support%2C%20I%20have%20an%20inquiry"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-emerald-700 text-[#574144] font-medium"
+                >
+                  WhatsApp: +91 82380 23498
                 </a>
               </li>
               <li className="flex items-center gap-2.5">
