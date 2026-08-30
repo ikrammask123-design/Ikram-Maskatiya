@@ -11,6 +11,13 @@ import {
   CheckCircle,
   Truck,
   CreditCard,
+  QrCode,
+  Banknote,
+  Copy,
+  Check,
+  MessageCircle,
+  ExternalLink,
+  Lock,
 } from 'lucide-react';
 import { CartItem, Currency } from '../types';
 import { formatPrice } from './ProductCard';
@@ -55,7 +62,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     country: 'India',
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi' | 'vault'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'upi' | 'cod'>('razorpay');
+  const [selectedUpiApp, setSelectedUpiApp] = useState<'gpay' | 'phonepe' | 'paytm' | 'qr'>('gpay');
+  const [copiedUpi, setCopiedUpi] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [orderId, setOrderId] = useState('');
 
   if (!isOpen) return null;
@@ -79,11 +89,58 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     }
   };
 
+  const handleCopyUpi = () => {
+    navigator.clipboard.writeText('zevioza@upi');
+    setCopiedUpi(true);
+    setTimeout(() => setCopiedUpi(false), 2500);
+  };
+
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
-    const newId = `ZV-${Math.floor(100000 + Math.random() * 900000)}`;
-    setOrderId(newId);
-    setCheckoutStep('success');
+    setIsProcessingPayment(true);
+
+    // Simulate real gateway / order generation
+    setTimeout(() => {
+      const newId = `ZV-${Math.floor(100000 + Math.random() * 900000)}`;
+      setOrderId(newId);
+      setIsProcessingPayment(false);
+      setCheckoutStep('success');
+    }, 1200);
+  };
+
+  const handleWhatsAppOrder = () => {
+    const itemsList = items
+      .map(
+        (i) =>
+          `• ${i.product.name} (Qty: ${i.quantity}${
+            i.selectedSize ? `, Size: ${i.selectedSize}` : ''
+          }${i.customStitching ? ', +Custom Stitching' : ''}) - ₹${
+            (i.product.price + (i.customStitching ? 2500 : 0)) * i.quantity
+          }`
+      )
+      .join('\n');
+
+    const message = encodeURIComponent(
+      `🛍️ *New Order Request - Zevioza Boutique*\n\n` +
+        `*Customer Name:* ${shippingInfo.name}\n` +
+        `*Phone:* ${shippingInfo.phone}\n` +
+        `*Email:* ${shippingInfo.email}\n` +
+        `*Delivery Address:* ${shippingInfo.address}, ${shippingInfo.city}, ${shippingInfo.pincode}, ${shippingInfo.country}\n\n` +
+        `*Order Items:*\n${itemsList}\n\n` +
+        `*Subtotal:* ₹${rawSubtotal}\n` +
+        (discountApplied ? `*Discount (10%):* -₹${discountAmount}\n` : '') +
+        (giftWrap ? `*Gift Packaging:* +₹500\n` : '') +
+        `*Total Amount:* ₹${grandTotal}\n` +
+        `*Payment Choice:* ${
+          paymentMethod === 'razorpay'
+            ? 'Razorpay (Cards / Netbanking)'
+            : paymentMethod === 'upi'
+            ? `UPI (${selectedUpiApp.toUpperCase()})`
+            : 'Cash on Delivery (COD)'
+        }\n\nPlease confirm availability and dispatch schedule!`
+    );
+
+    window.open(`https://wa.me/919876543210?text=${message}`, '_blank');
   };
 
   const handleFinishSuccess = () => {
@@ -92,14 +149,17 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     onClose();
   };
 
+  const upiDeepLink = `upi://pay?pa=zevioza@upi&pn=Zevioza%20Boutique&am=${grandTotal}&cu=INR&tn=Zevioza%20Order`;
+  const upiQrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+    upiDeepLink
+  )}`;
+
   return (
     <div
       id="cart-drawer-overlay"
       className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-xs flex justify-end"
     >
-      <div
-        className="w-full max-w-md bg-[#fcf9f8] h-full shadow-2xl flex flex-col justify-between animate-slideLeft"
-      >
+      <div className="w-full max-w-md bg-[#fcf9f8] h-full shadow-2xl flex flex-col justify-between animate-slideLeft">
         {/* Header */}
         <div className="p-5 border-b border-[#debfc2]/30 flex items-center justify-between bg-white">
           <div className="flex items-center gap-2">
@@ -270,6 +330,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
           {checkoutStep === 'checkout' && (
             <form id="checkout-form" onSubmit={handlePlaceOrder} className="flex flex-col gap-4">
+              {/* Step 1: Shipping Address */}
               <div className="p-3 bg-white rounded-xl border border-[#debfc2]/30">
                 <span className="text-xs font-semibold text-[#6d0026] uppercase tracking-wider block mb-3">
                   1. Boutique Delivery Address
@@ -299,7 +360,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     <input
                       type="tel"
                       required
-                      placeholder="Phone"
+                      placeholder="Phone Number (for SMS & Tracking)"
                       value={shippingInfo.phone}
                       onChange={(e) =>
                         setShippingInfo({ ...shippingInfo, phone: e.target.value })
@@ -310,7 +371,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="Street Address, Apt / Villa"
+                    placeholder="Street Address, House / Flat No, Landmark"
                     value={shippingInfo.address}
                     onChange={(e) =>
                       setShippingInfo({ ...shippingInfo, address: e.target.value })
@@ -329,7 +390,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     />
                     <input
                       type="text"
-                      placeholder="Pincode / ZIP"
+                      placeholder="Pincode"
                       value={shippingInfo.pincode}
                       onChange={(e) =>
                         setShippingInfo({ ...shippingInfo, pincode: e.target.value })
@@ -349,66 +410,236 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </div>
               </div>
 
-              {/* Payment Selector */}
+              {/* Step 2: Payment Method Selection */}
               <div className="p-3 bg-white rounded-xl border border-[#debfc2]/30">
-                <span className="text-xs font-semibold text-[#6d0026] uppercase tracking-wider block mb-3">
-                  2. Payment Method
-                </span>
-                <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-[#6d0026] uppercase tracking-wider block">
+                    2. Select Payment Method
+                  </span>
+                  <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5" /> 100% Secure
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-2.5">
+                  {/* Option 1: Razorpay Gateway */}
                   <label
-                    onClick={() => setPaymentMethod('card')}
-                    className={`p-3 rounded-lg border flex items-center justify-between cursor-pointer text-xs ${
-                      paymentMethod === 'card'
-                        ? 'border-[#6d0026] bg-[#ffd9dd]/30 font-semibold'
-                        : 'border-[#debfc2]/40'
+                    onClick={() => setPaymentMethod('razorpay')}
+                    className={`p-3 rounded-xl border transition-all cursor-pointer text-xs ${
+                      paymentMethod === 'razorpay'
+                        ? 'border-[#6d0026] bg-[#fed9e2]/25 shadow-xs'
+                        : 'border-[#debfc2]/40 hover:bg-[#f6f3f2]'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="w-4 h-4 text-[#6d0026]" />
-                      <span>Credit / Debit Card (Visa, Mastercard, Amex)</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-[#3395ff]/15 flex items-center justify-center text-[#0761e2] font-bold text-xs">
+                          <CreditCard className="w-4 h-4 text-[#0761e2]" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-[#1c1b1b]">
+                              Razorpay (Cards, NetBanking, EMI)
+                            </span>
+                            <span className="text-[9px] bg-[#3395ff]/20 text-[#0761e2] font-bold px-1.5 py-0.2 rounded">
+                              OFFICIAL
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[#574144] mt-0.5">
+                            Visa, Mastercard, RuPay, Amex & All Indian Banks
+                          </p>
+                        </div>
+                      </div>
+                      <span className="w-4 h-4 rounded-full border border-[#6d0026] flex items-center justify-center shrink-0">
+                        {paymentMethod === 'razorpay' && (
+                          <span className="w-2 h-2 rounded-full bg-[#6d0026]"></span>
+                        )}
+                      </span>
                     </div>
-                    <span className="w-3 h-3 rounded-full border border-[#6d0026] flex items-center justify-center">
-                      {paymentMethod === 'card' && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#6d0026]"></span>
-                      )}
-                    </span>
                   </label>
 
+                  {/* Option 2: Instant UPI */}
                   <label
                     onClick={() => setPaymentMethod('upi')}
-                    className={`p-3 rounded-lg border flex items-center justify-between cursor-pointer text-xs ${
+                    className={`p-3 rounded-xl border transition-all cursor-pointer text-xs ${
                       paymentMethod === 'upi'
-                        ? 'border-[#6d0026] bg-[#ffd9dd]/30 font-semibold'
-                        : 'border-[#debfc2]/40'
+                        ? 'border-[#6d0026] bg-[#fed9e2]/25 shadow-xs'
+                        : 'border-[#debfc2]/40 hover:bg-[#f6f3f2]'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-[#dbb46b]" />
-                      <span>UPI / Net Banking / Razorpay</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-[#4b9e4b]/15 flex items-center justify-center text-[#237023] font-bold text-xs">
+                          <QrCode className="w-4 h-4 text-[#237023]" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-[#1c1b1b]">
+                              Instant UPI / QR Code
+                            </span>
+                            <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded">
+                              0% FEE
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[#574144] mt-0.5">
+                            Google Pay, PhonePe, Paytm, CRED & BHIM
+                          </p>
+                        </div>
+                      </div>
+                      <span className="w-4 h-4 rounded-full border border-[#6d0026] flex items-center justify-center shrink-0">
+                        {paymentMethod === 'upi' && (
+                          <span className="w-2 h-2 rounded-full bg-[#6d0026]"></span>
+                        )}
+                      </span>
                     </div>
-                    <span className="w-3 h-3 rounded-full border border-[#6d0026] flex items-center justify-center">
-                      {paymentMethod === 'upi' && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#6d0026]"></span>
-                      )}
-                    </span>
+
+                    {/* UPI Sub-Options when active */}
+                    {paymentMethod === 'upi' && (
+                      <div className="mt-3 pt-3 border-t border-[#debfc2]/30 flex flex-col items-center">
+                        <div className="w-full grid grid-cols-4 gap-1.5 mb-3">
+                          {[
+                            { id: 'gpay', label: 'Google Pay' },
+                            { id: 'phonepe', label: 'PhonePe' },
+                            { id: 'paytm', label: 'Paytm' },
+                            { id: 'qr', label: 'Show QR' },
+                          ].map((app) => (
+                            <button
+                              key={app.id}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedUpiApp(app.id as any);
+                              }}
+                              className={`py-1.5 px-1 rounded-lg text-[10px] font-semibold text-center transition-all ${
+                                selectedUpiApp === app.id
+                                  ? 'bg-[#6d0026] text-white'
+                                  : 'bg-[#f6f3f2] text-[#574144] hover:bg-[#e8e4e3]'
+                              }`}
+                            >
+                              {app.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* QR Code Container */}
+                        <div className="p-3 bg-white rounded-xl border border-[#debfc2]/40 flex flex-col items-center text-center shadow-xs">
+                          <img
+                            src={upiQrCodeUrl}
+                            alt="Zevioza Boutique UPI QR"
+                            className="w-32 h-32 rounded-lg mb-2"
+                          />
+                          <span className="text-[11px] font-bold text-[#6d0026]">
+                            Scan to Pay {formatPrice(grandTotal, currency)}
+                          </span>
+                          <span className="text-[9px] text-[#8a7174] mt-0.5">
+                            UPI ID: <span className="font-mono font-semibold text-[#1c1b1b]">zevioza@upi</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopyUpi();
+                            }}
+                            className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-[#6d0026] hover:bg-[#fed9e2]/40 px-2.5 py-1 rounded-full border border-[#debfc2]/60"
+                          >
+                            {copiedUpi ? (
+                              <>
+                                <Check className="w-3 h-3 text-emerald-600" />
+                                <span className="text-emerald-700">UPI ID Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3" />
+                                <span>Copy UPI ID</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </label>
+
+                  {/* Option 3: Cash on Delivery (COD) */}
+                  <label
+                    onClick={() => setPaymentMethod('cod')}
+                    className={`p-3 rounded-xl border transition-all cursor-pointer text-xs ${
+                      paymentMethod === 'cod'
+                        ? 'border-[#6d0026] bg-[#fed9e2]/25 shadow-xs'
+                        : 'border-[#debfc2]/40 hover:bg-[#f6f3f2]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-[#b45309]/15 flex items-center justify-center text-[#b45309] font-bold text-xs">
+                          <Banknote className="w-4 h-4 text-[#b45309]" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-[#1c1b1b]">
+                              Cash on Delivery (COD)
+                            </span>
+                            <span className="text-[9px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.2 rounded">
+                              PAY AT DOORSTEP
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[#574144] mt-0.5">
+                            Pay via Cash or UPI upon package inspection
+                          </p>
+                        </div>
+                      </div>
+                      <span className="w-4 h-4 rounded-full border border-[#6d0026] flex items-center justify-center shrink-0">
+                        {paymentMethod === 'cod' && (
+                          <span className="w-2 h-2 rounded-full bg-[#6d0026]"></span>
+                        )}
+                      </span>
+                    </div>
+
+                    {paymentMethod === 'cod' && (
+                      <div className="mt-2.5 p-2 bg-amber-50/80 rounded-lg border border-amber-200 text-[10px] text-amber-900 leading-relaxed">
+                        ✓ No advance payment required. Delivery executive will verify your contact number before arrival.
+                      </div>
+                    )}
                   </label>
                 </div>
               </div>
 
-              {/* Security Badge */}
+              {/* WhatsApp Fast-Track Checkout Button */}
+              <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4 text-emerald-700" />
+                  <div>
+                    <span className="text-xs font-semibold text-emerald-950 block">
+                      Prefer WhatsApp Assistance?
+                    </span>
+                    <span className="text-[10px] text-emerald-800">
+                      Send your cart directly to our boutique stylists
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleWhatsAppOrder}
+                  className="bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-xs flex items-center gap-1"
+                >
+                  <span>Order via WhatsApp</span>
+                  <ExternalLink className="w-3 h-3" />
+                </button>
+              </div>
+
+              {/* Security Guarantee Badge */}
               <div className="flex items-center gap-2 text-[11px] text-[#574144] px-1">
                 <ShieldCheck className="w-4 h-4 text-[#6d0026]" />
-                <span>256-bit Encrypted Boutique Checkout with Authenticity Guarantee</span>
+                <span>256-bit Bank-Grade Encryption with Zevioza Authenticity Guarantee</span>
               </div>
             </form>
           )}
 
           {checkoutStep === 'success' && (
-            <div className="text-center py-10 flex flex-col items-center">
+            <div className="text-center py-8 flex flex-col items-center">
               <div className="mb-3">
                 <Logo size="md" />
               </div>
-              <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3">
+              <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3 shadow-xs">
                 <CheckCircle className="w-8 h-8" />
               </div>
               <span className="text-xs font-semibold text-[#8a7174] uppercase tracking-widest">
@@ -420,32 +651,59 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <p className="text-xs font-medium text-[#1c1b1b] bg-[#ffd9dd]/50 px-3 py-1 rounded-full mb-4">
                 Order ID: {orderId}
               </p>
-              <p className="text-xs text-[#574144] max-w-xs leading-relaxed mb-6">
-                Thank you for selecting Zevioza. Your artisanal drapes are being prepared in our climate-controlled vault and will be dispatched to {shippingInfo.city}.
+              <p className="text-xs text-[#574144] max-w-xs leading-relaxed mb-5">
+                Thank you for choosing Zevioza. Your handcrafted pieces are being prepared and will be dispatched to {shippingInfo.city}.
               </p>
 
-              <div className="w-full p-4 bg-white rounded-xl border border-[#debfc2]/30 text-left text-xs mb-6 flex flex-col gap-2">
+              {/* Order Receipt Card */}
+              <div className="w-full p-4 bg-white rounded-xl border border-[#debfc2]/30 text-left text-xs mb-5 flex flex-col gap-2 shadow-xs">
                 <div className="flex items-center justify-between text-[#574144]">
-                  <span>Delivery Estimate:</span>
+                  <span>Payment Mode:</span>
+                  <span className="font-semibold text-[#1c1b1b]">
+                    {paymentMethod === 'razorpay'
+                      ? 'Razorpay (Online Payment)'
+                      : paymentMethod === 'upi'
+                      ? `UPI (${selectedUpiApp.toUpperCase()})`
+                      : 'Cash on Delivery (COD)'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[#574144]">
+                  <span>Delivery Address:</span>
+                  <span className="font-semibold text-[#1c1b1b] text-right truncate max-w-[180px]">
+                    {shippingInfo.address}, {shippingInfo.city}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[#574144]">
+                  <span>Estimated Delivery:</span>
                   <span className="font-semibold text-[#1c1b1b]">3-5 Business Days</span>
                 </div>
                 <div className="flex items-center justify-between text-[#574144]">
                   <span>Packaging:</span>
                   <span className="font-semibold text-[#1c1b1b]">
-                    {giftWrap ? 'Signature Velvet Box' : 'Luxury Silk Pouch'}
+                    {giftWrap ? 'Signature Rose Velvet Box' : 'Luxury Silk Pouch'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-[#574144]">
-                  <span>Amount Paid:</span>
-                  <span className="font-display font-bold text-[#6d0026]">
+                <div className="flex items-center justify-between text-[#574144] pt-2 border-t border-[#f0eded]">
+                  <span>Total Amount:</span>
+                  <span className="font-display font-bold text-base text-[#6d0026]">
                     {formatPrice(grandTotal, currency)}
                   </span>
                 </div>
               </div>
 
+              {/* WhatsApp Updates Action */}
+              <button
+                type="button"
+                onClick={handleWhatsAppOrder}
+                className="w-full mb-3 bg-emerald-700 hover:bg-emerald-800 text-white py-3 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Receive Updates on WhatsApp</span>
+              </button>
+
               <button
                 onClick={handleFinishSuccess}
-                className="w-full bg-[#6d0026] text-white py-3.5 rounded-full text-xs font-semibold uppercase tracking-widest hover:bg-[#8e1b3b]"
+                className="w-full bg-[#f0eded] hover:bg-[#e5e2e1] text-[#574144] py-3 rounded-full text-xs font-semibold uppercase tracking-widest transition-all"
               >
                 Return to Boutique
               </button>
@@ -504,9 +762,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 <button
                   type="submit"
                   form="checkout-form"
-                  className="flex-1 bg-[#6d0026] text-white py-3.5 rounded-full font-body text-xs font-semibold tracking-widest uppercase hover:bg-[#8e1b3b] active:scale-98 transition-all shadow-md"
+                  disabled={isProcessingPayment}
+                  className="flex-1 bg-[#6d0026] text-white py-3.5 rounded-full font-body text-xs font-semibold tracking-widest uppercase hover:bg-[#8e1b3b] active:scale-98 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-70"
                 >
-                  CONFIRM & PAY {formatPrice(grandTotal, currency)}
+                  {isProcessingPayment ? (
+                    <span>Processing Payment...</span>
+                  ) : paymentMethod === 'cod' ? (
+                    <span>CONFIRM COD ORDER ({formatPrice(grandTotal, currency)})</span>
+                  ) : paymentMethod === 'upi' ? (
+                    <span>PAY VIA UPI {formatPrice(grandTotal, currency)}</span>
+                  ) : (
+                    <span>PAY VIA RAZORPAY {formatPrice(grandTotal, currency)}</span>
+                  )}
                 </button>
               </div>
             )}
@@ -516,3 +783,4 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     </div>
   );
 };
+
