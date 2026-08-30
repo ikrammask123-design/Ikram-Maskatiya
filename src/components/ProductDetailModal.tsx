@@ -54,6 +54,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [addedToast, setAddedToast] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  React.useEffect(() => {
+    if (product) {
+      setSelectedImage(product.image);
+      setSelectedSize(product.sizes ? product.sizes[0] : 'Free Size');
+    }
+  }, [product?.id, product?.image]);
+
   const images = product.galleryImages && product.galleryImages.length > 0
     ? product.galleryImages
     : [product.image];
