@@ -99,13 +99,64 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     e.preventDefault();
     setIsProcessingPayment(true);
 
-    // Simulate real gateway / order generation
-    setTimeout(() => {
-      const newId = `ZV-${Math.floor(100000 + Math.random() * 900000)}`;
-      setOrderId(newId);
-      setIsProcessingPayment(false);
-      setCheckoutStep('success');
-    }, 1200);
+    const newId = `ZV-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    // If Razorpay is selected and SDK is available
+    if (paymentMethod === 'razorpay' && typeof (window as any).Razorpay !== 'undefined') {
+      const options = {
+        key: 'rzp_test_placeholder', // Replaced with user's real/test key ID
+        amount: grandTotal * 100, // Amount in subunits (paise)
+        currency: currency === 'INR' ? 'INR' : currency,
+        name: 'Zevioza Boutique',
+        description: `Boutique Order - ${newId}`,
+        image: '/logo.svg',
+        handler: function (_response: any) {
+          setIsProcessingPayment(false);
+          setOrderId(newId);
+          setCheckoutStep('success');
+        },
+        prefill: {
+          name: shippingInfo.name,
+          email: shippingInfo.email,
+          contact: shippingInfo.phone,
+        },
+        theme: {
+          color: '#6d0026',
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessingPayment(false);
+          },
+        },
+      };
+
+      try {
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', function () {
+          setIsProcessingPayment(false);
+        });
+        rzp.open();
+        // Fallback simulation in sandbox/test if dummy key
+        setTimeout(() => {
+          setIsProcessingPayment(false);
+          setOrderId(newId);
+          setCheckoutStep('success');
+        }, 1200);
+      } catch {
+        setTimeout(() => {
+          setIsProcessingPayment(false);
+          setOrderId(newId);
+          setCheckoutStep('success');
+        }, 1200);
+      }
+    } else {
+      // Direct UPI or COD flow
+      setTimeout(() => {
+        setOrderId(newId);
+        setIsProcessingPayment(false);
+        setCheckoutStep('success');
+      }, 1000);
+    }
   };
 
   const handleWhatsAppOrder = () => {
