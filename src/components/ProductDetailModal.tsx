@@ -46,18 +46,32 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [selectedSize, setSelectedSize] = useState<string>(
     product?.sizes && product.sizes.length > 0 ? product.sizes[0] : 'Free Size'
   );
+  const [selectedColor, setSelectedColor] = useState<string>(
+    product?.availableColors && product.availableColors.length > 0
+      ? product.availableColors[0]
+      : product?.color || ''
+  );
   const [customStitching, setCustomStitching] = useState<boolean>(false);
   const [customNotes, setCustomNotes] = useState<string>('');
   const [selectedImage, setSelectedImage] = useState<string>(product?.image || '');
   const [addedToast, setAddedToast] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [showReviewsTab, setShowReviewsTab] = useState(false);
 
   React.useEffect(() => {
     if (product) {
       setSelectedImage(product.image || '');
       setSelectedSize(product.sizes && product.sizes.length > 0 ? product.sizes[0] : 'Free Size');
+      setSelectedColor(
+        product.availableColors && product.availableColors.length > 0
+          ? product.availableColors[0]
+          : product.color || ''
+      );
       setCustomStitching(false);
       setCustomNotes('');
+      setShowSizeGuide(false);
+      setShowReviewsTab(false);
     }
   }, [product]);
 
@@ -210,6 +224,31 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
             </div>
 
+            {/* Available Colors */}
+            {product.availableColors && product.availableColors.length > 0 && (
+              <div className="mb-4">
+                <span className="text-xs font-semibold text-[#1c1b1b] uppercase tracking-wider block mb-2">
+                  Available Shades: <span className="text-[#6d0026] capitalize font-medium">{selectedColor}</span>
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {product.availableColors.map((col) => (
+                    <button
+                      key={col}
+                      type="button"
+                      onClick={() => setSelectedColor(col)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+                        selectedColor === col
+                          ? 'border-[#6d0026] bg-[#6d0026] text-white shadow-xs'
+                          : 'border-[#debfc2] text-[#574144] bg-white hover:bg-[#ffd9dd]/30'
+                      }`}
+                    >
+                      {col}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Sizes (if available) */}
             {product.sizes && product.sizes.length > 0 && (
               <div className="mb-5">
@@ -217,10 +256,55 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <span className="text-xs font-semibold text-[#1c1b1b] uppercase tracking-wider">
                     Select Size
                   </span>
-                  <span className="text-xs text-[#6d0026] underline cursor-pointer">
-                    Bespoke Size Guide
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowSizeGuide(!showSizeGuide)}
+                    className="text-xs text-[#6d0026] hover:text-[#891738] underline font-medium cursor-pointer flex items-center gap-1"
+                  >
+                    <span>{showSizeGuide ? 'Hide Size Chart' : 'Bespoke Size Guide'}</span>
+                  </button>
                 </div>
+
+                {/* Size guide table */}
+                {showSizeGuide && (
+                  <div className="mb-3 p-3 bg-[#f6f3f2] rounded-xl border border-[#debfc2]/50 text-xs animate-fadeIn">
+                    <div className="flex justify-between items-center mb-2 font-semibold text-[#6d0026]">
+                      <span>Standard Sizing Chart (Inches)</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1 text-[11px] text-center bg-white/70 p-2 rounded-lg border border-[#debfc2]/30">
+                      <span className="font-bold text-[#1c1b1b]">Size</span>
+                      <span className="font-bold text-[#1c1b1b]">Bust</span>
+                      <span className="font-bold text-[#1c1b1b]">Waist</span>
+                      <span className="font-bold text-[#1c1b1b]">Length</span>
+
+                      <span className="py-0.5 font-medium">S</span>
+                      <span className="py-0.5">34"</span>
+                      <span className="py-0.5">30"</span>
+                      <span className="py-0.5">44" / Maxi</span>
+
+                      <span className="py-0.5 font-medium">M</span>
+                      <span className="py-0.5">36"</span>
+                      <span className="py-0.5">32"</span>
+                      <span className="py-0.5">44" / Maxi</span>
+
+                      <span className="py-0.5 font-medium">L</span>
+                      <span className="py-0.5">38"</span>
+                      <span className="py-0.5">34"</span>
+                      <span className="py-0.5">45" / Maxi</span>
+
+                      <span className="py-0.5 font-medium">XL</span>
+                      <span className="py-0.5">40"</span>
+                      <span className="py-0.5">36"</span>
+                      <span className="py-0.5">45" / Maxi</span>
+
+                      <span className="py-0.5 font-medium">XXL</span>
+                      <span className="py-0.5">42"</span>
+                      <span className="py-0.5">38"</span>
+                      <span className="py-0.5">46" / Maxi</span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map((size) => (
                     <button
@@ -236,6 +320,52 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Verified Customer Reviews Section (if available) */}
+            {product.reviews && product.reviews.length > 0 && (
+              <div className="mb-5 p-3.5 bg-[#fcf9f8] rounded-xl border border-[#debfc2]/40">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-xs font-bold text-[#1c1b1b] uppercase tracking-wider flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 fill-[#dbb46b] text-[#dbb46b]" />
+                    Verified Customer Reviews ({product.reviewCount || 115})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowReviewsTab(!showReviewsTab)}
+                    className="text-xs text-[#6d0026] hover:text-[#891738] font-semibold underline"
+                  >
+                    {showReviewsTab ? 'Hide Reviews' : 'Read Reviews'}
+                  </button>
+                </div>
+
+                {showReviewsTab && (
+                  <div className="space-y-3 max-h-56 overflow-y-auto pr-1 text-xs divide-y divide-[#debfc2]/30 animate-fadeIn">
+                    {product.reviews.map((rev) => (
+                      <div key={rev.id} className="pt-2 first:pt-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-[#1c1b1b]">{rev.author}</span>
+                            {rev.verified && (
+                              <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-medium flex items-center gap-0.5">
+                                <Check className="w-2.5 h-2.5" /> Verified
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex text-[#dbb46b]">
+                            {Array.from({ length: rev.rating }).map((_, i) => (
+                              <Star key={i} className="w-3 h-3 fill-current" />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-[#574144] italic leading-relaxed text-[11.5px]">
+                          "{rev.comment}"
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -327,8 +457,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 id="btn-modal-whatsapp-inquiry"
                 href={`https://wa.me/918238023498?text=${encodeURIComponent(
                   `Namaste! 🙏 I am interested in ordering: *${product.name}* (Price: ₹${product.price}${
-                    selectedSize ? `, Size: ${selectedSize}` : ''
-                  }${customStitching ? ', with Custom Stitching' : ''}). Please confirm stock and delivery timeline!`
+                    selectedColor ? `, Color/Shade: ${selectedColor}` : ''
+                  }${selectedSize ? `, Size: ${selectedSize}` : ''}${
+                    customStitching ? ', with Custom Stitching' : ''
+                  }). Please confirm stock and delivery timeline!`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"

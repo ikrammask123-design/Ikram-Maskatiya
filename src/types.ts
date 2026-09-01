@@ -21,6 +21,15 @@ export interface Product {
   inStock: boolean;
   sizes?: string[];
   includesBlousePiece?: boolean;
+  availableColors?: string[];
+  reviews?: {
+    id: string;
+    author: string;
+    rating: number;
+    comment: string;
+    verified?: boolean;
+    date?: string;
+  }[];
 }
 
 export interface CartItem {
