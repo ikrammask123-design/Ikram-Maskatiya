@@ -1,5 +1,12 @@
 export type CategoryId = 'all' | 'sarees' | 'kurtis' | 'dresses' | 'accessories' | 'bridal';
 
+export interface ColorVariant {
+  name: string;
+  image: string;
+  galleryImages?: string[];
+  hex?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -22,6 +29,7 @@ export interface Product {
   sizes?: string[];
   includesBlousePiece?: boolean;
   availableColors?: string[];
+  colorVariants?: ColorVariant[];
   reviews?: {
     id: string;
     author: string;
@@ -38,6 +46,8 @@ export interface CartItem {
   product: Product;
   quantity: number;
   selectedSize?: string;
+  selectedColor?: string;
+  selectedImage?: string;
   customStitching?: boolean;
   notes?: string;
 }

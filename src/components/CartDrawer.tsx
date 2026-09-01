@@ -164,8 +164,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       .map(
         (i) =>
           `• ${i.product.name} (Qty: ${i.quantity}${
-            i.selectedSize ? `, Size: ${i.selectedSize}` : ''
-          }${i.customStitching ? ', +Custom Stitching' : ''}) - ₹${
+            i.selectedColor ? `, Shade: ${i.selectedColor}` : ''
+          }${i.selectedSize ? `, Size: ${i.selectedSize}` : ''}${
+            i.customStitching ? ', +Custom Stitching' : ''
+          }) - ₹${
             (i.product.price + (i.customStitching ? 2500 : 0)) * i.quantity
           }`
       )
@@ -265,8 +267,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       className="flex gap-4 p-3 bg-white rounded-xl border border-[#debfc2]/30 shadow-xs"
                     >
                       <img
-                        src={item.product.image}
-                        alt={item.product.name}
+                        src={item.selectedImage || item.product.image}
+                        alt={`${item.product.name}${item.selectedColor ? ` - ${item.selectedColor}` : ''}`}
                         className="w-20 h-26 object-cover rounded-lg bg-[#f6f3f2] shrink-0"
                       />
                       <div className="flex-1 flex flex-col justify-between">
@@ -286,11 +288,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                           <span className="text-[11px] text-[#8a7174] block mt-0.5">
                             {item.product.fabric}
                           </span>
-                          {item.selectedSize && (
-                            <span className="text-[11px] font-semibold text-[#6d0026] block">
-                              Size: {item.selectedSize}
-                            </span>
-                          )}
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            {item.selectedColor && (
+                              <span className="text-[10px] font-semibold text-[#6d0026] bg-[#ffd9dd]/60 px-2 py-0.5 rounded-full">
+                                Shade: {item.selectedColor}
+                              </span>
+                            )}
+                            {item.selectedSize && (
+                              <span className="text-[10px] font-semibold text-[#574144] bg-[#f0eded] px-2 py-0.5 rounded-full">
+                                Size: {item.selectedSize}
+                              </span>
+                            )}
+                          </div>
                           {item.customStitching && (
                             <span className="text-[10px] text-[#891738] bg-[#ffd9dd]/50 px-1.5 py-0.5 rounded mt-1 inline-block">
                               + Custom Blouse (₹2,500)

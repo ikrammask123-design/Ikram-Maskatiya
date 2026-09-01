@@ -67,13 +67,19 @@ export default function App() {
     product: Product,
     size?: string,
     customStitching?: boolean,
-    notes?: string
+    notes?: string,
+    color?: string,
+    image?: string
   ) => {
+    const chosenColor = color || (product.availableColors && product.availableColors[0]) || product.color || '';
+    const chosenImage = image || product.image;
+
     setCartItems((prev) => {
       const existingIndex = prev.findIndex(
         (item) =>
           item.productId === product.id &&
           item.selectedSize === size &&
+          item.selectedColor === chosenColor &&
           item.customStitching === customStitching
       );
 
@@ -89,6 +95,8 @@ export default function App() {
         product,
         quantity: 1,
         selectedSize: size,
+        selectedColor: chosenColor,
+        selectedImage: chosenImage,
         customStitching: customStitching || false,
         notes,
       };
@@ -100,9 +108,11 @@ export default function App() {
     product: Product,
     size?: string,
     customStitching?: boolean,
-    notes?: string
+    notes?: string,
+    color?: string,
+    image?: string
   ) => {
-    handleAddToCart(product, size, customStitching, notes);
+    handleAddToCart(product, size, customStitching, notes, color, image);
     setSelectedProductModal(null);
     setIsCartOpen(true);
   };

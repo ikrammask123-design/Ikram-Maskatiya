@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Heart, ShoppingBag, Eye, Star } from 'lucide-react';
 import { Product, Currency } from '../types';
 import { CURRENCY_RATES } from '../data/products';
@@ -21,6 +21,24 @@ export const formatPrice = (priceInINR: number, currency: Currency): string => {
   return `${rateObj.symbol}${converted.toLocaleString()}`;
 };
 
+const getColorHex = (colorName: string, explicitHex?: string): string => {
+  if (explicitHex) return explicitHex;
+  const lower = colorName.toLowerCase();
+  if (lower.includes('navy') || lower.includes('blue')) return '#1e3a8a';
+  if (lower.includes('red') || lower.includes('maroon') || lower.includes('wine') || lower.includes('plum')) return '#991b1b';
+  if (lower.includes('green') || lower.includes('sea') || lower.includes('jade') || lower.includes('mint')) return '#166534';
+  if (lower.includes('black')) return '#18181b';
+  if (lower.includes('brown')) return '#78350f';
+  if (lower.includes('beige') || lower.includes('cream') || lower.includes('ivory')) return '#e6ccb2';
+  if (lower.includes('orange') || lower.includes('rust')) return '#ea580c';
+  if (lower.includes('yellow') || lower.includes('mustard')) return '#ca8a04';
+  if (lower.includes('pink') || lower.includes('rose')) return '#db2777';
+  if (lower.includes('lavender') || lower.includes('purple')) return '#7c3aed';
+  if (lower.includes('gold')) return '#d97706';
+  if (lower.includes('white')) return '#f8fafc';
+  return '#881337';
+};
+
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   currency,
@@ -29,7 +47,42 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onSelectProduct,
   onAddToCart,
 }) => {
+  const [activeColor, setActiveColor] = useState<string>(
+    product.availableColors && product.availableColors.length > 0
+      ? product.availableColors[0]
+      : product.color || ''
+  );
+  const [cardImage, setCardImage] = useState<string>(product.image);
+
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
+
+  const handleSelectColor = (col: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveColor(col);
+
+    // 1. Check in colorVariants
+    const variant = product.colorVariants?.find(
+      (v) =>
+        v.name.toLowerCase() === col.toLowerCase() ||
+        col.toLowerCase().includes(v.name.toLowerCase()) ||
+        v.name.toLowerCase().includes(col.toLowerCase())
+    );
+
+    if (variant) {
+      setCardImage(variant.image);
+      return;
+    }
+
+    // 2. Fallback: match by index
+    const colorIndex = product.availableColors?.indexOf(col) ?? -1;
+    if (
+      colorIndex >= 0 &&
+      product.galleryImages &&
+      product.galleryImages[colorIndex]
+    ) {
+      setCardImage(product.galleryImages[colorIndex]);
+    }
+  };
 
   return (
     <div
@@ -42,9 +95,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         onClick={() => onSelectProduct(product)}
       >
         <img
-          src={product.image}
+          key={cardImage}
+          src={cardImage}
           alt={product.name}
-          className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-106"
+          className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-106 animate-fadeIn"
           loading="lazy"
         />
 
@@ -138,9 +192,41 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </h3>
 
           {/* Subtitle / Craft detail */}
-          <p className="text-xs text-[#8a7174] font-body line-clamp-1 mb-3">
+          <p className="text-xs text-[#8a7174] font-body line-clamp-1 mb-2">
             {product.fabric || 'Premium handcrafted piece'}
           </p>
+
+          {/* Interactive Color Swatches if multi-color */}
+          {product.availableColors && product.availableColors.length > 1 && (
+            <div className="flex items-center gap-1.5 mb-2.5 py-0.5">
+              <span className="text-[10px] text-[#8a7174] font-medium mr-0.5">Shades:</span>
+              <div className="flex items-center gap-1.5 overflow-x-hidden">
+                {product.availableColors.slice(0, 5).map((col) => {
+                  const isCurrent = activeColor === col;
+                  const hex = getColorHex(col);
+                  return (
+                    <button
+                      key={col}
+                      type="button"
+                      title={`View ${col}`}
+                      onClick={(e) => handleSelectColor(col, e)}
+                      className={`w-3.5 h-3.5 rounded-full border transition-all cursor-pointer ${
+                        isCurrent
+                          ? 'border-[#6d0026] scale-125 ring-2 ring-[#6d0026]/30 shadow-xs'
+                          : 'border-black/20 hover:scale-115 opacity-80 hover:opacity-100'
+                      }`}
+                      style={{ backgroundColor: hex }}
+                    />
+                  );
+                })}
+                {product.availableColors.length > 5 && (
+                  <span className="text-[10px] text-[#8a7174] font-semibold">
+                    +{product.availableColors.length - 5}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Pricing & Add to Cart button */}
@@ -170,3 +256,4 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     </div>
   );
 };
+
