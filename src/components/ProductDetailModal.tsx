@@ -4,16 +4,18 @@ import {
   Heart,
   ShoppingBag,
   Star,
-  Check,  
+  Check,
   ShieldCheck,
   Truck,
   Sparkles,
   Scissors,
   Share2,
   Palette,
+  Eye,
 } from 'lucide-react';
 import { Product, Currency } from '../types';
 import { formatPrice } from './ProductCard';
+import { FlipkartProductDetails } from './FlipkartProductDetails';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -296,19 +298,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               {product.description}
             </p>
 
-            {/* Artisanal Heritage Note */}
-            <div className="p-3.5 bg-[#f6f3f2] rounded-xl border border-[#debfc2]/30 mb-5">
-              <div className="flex items-start gap-2.5 text-xs text-[#574144]">
-                <ShieldCheck className="w-4 h-4 text-[#aa314e] shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold text-[#1c1b1b] block">
-                    Artisanal Craftsmanship:
-                  </span>
-                  {product.craftDetails}
-                </div>
-              </div>
-            </div>
-
             {/* Available Colors with Instant Photo Switching */}
             {product.availableColors && product.availableColors.length > 0 && (
               <div className="mb-5 p-3.5 bg-[#fff8f8] rounded-xl border border-[#debfc2]/50">
@@ -424,6 +413,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
               </div>
             )}
+
+            {/* Flipkart-Style "All details" Specifications Section */}
+            <FlipkartProductDetails product={product} />
 
             {/* Verified Customer Reviews Section (if available) */}
             {product.reviews && product.reviews.length > 0 && (
