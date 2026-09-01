@@ -8,21 +8,38 @@ export const CATEGORY_CARDS = [
     id: 'sarees' as const,
     title: 'Sarees',
     subtitle: 'Handloom, Kanjivaram & Silk',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuATPfJM-tzK8EEXMRvtRBauTg1BNTOSW1kZ7yuPSOjKtQ84msbvFkfOGgdeyuhTemMclnGCdXdJ1YXwNrEoQikqqHkCsYwGZAmxOIqbKZzZkNQY2hx73kheDa7cyq5f3GWn7Tmv-OPCB0Q9doUTtY5G2BzsNDPVHS7PbdMo2wDYpJuvZoU-FWF34iLTEfZUWS9cZP89YiZJVIaq4cJtzqDF2RMgijet8LR2ADfj5zPh5UQ9azgspWZNkQ',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBhHaTOKw1ndCOZBOUxb3U7L5M21OQ9rjnDcLp5gNb4Z0HMgDUa-X4mSIIGyvF_FPNbKYQSCij6bBiC6SZXV_qSkhkC4jJoGSb3xajKlBGDpwSWhtg9uBfOELIAzYeO9AGYwkavKuqCZ5C5cYbbiwS8xpesJTdIXYxxw0zDPlJ8v9pnF-Ve7XzKpMGeU51Qu5SjG8_bt7cv3IUkHgtFza1X8aENaraRm-qPkuJQk1wQyTt7xSsespGA1w',
+    images: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuBhHaTOKw1ndCOZBOUxb3U7L5M21OQ9rjnDcLp5gNb4Z0HMgDUa-X4mSIIGyvF_FPNbKYQSCij6bBiC6SZXV_qSkhkC4jJoGSb3xajKlBGDpwSWhtg9uBfOELIAzYeO9AGYwkavKuqCZ5C5cYbbiwS8xpesJTdIXYxxw0zDPlJ8v9pnF-Ve7XzKpMGeU51Qu5SjG8_bt7cv3IUkHgtFza1X8aENaraRm-qPkuJQk1wQyTt7xSsespGA1w', // Kanjivaram Temple Silk Saree
+      'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80', // Paithani Peacock Motif Saree
+      '/indian_model_walking_saree.webp', // Handloom Silk Saree
+    ],
     iconName: 'styler',
   },
   {
     id: 'kurtis' as const,
     title: 'Kurtis',
     subtitle: 'Anarkali, Straight & Embroidered',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAaoSy_2XAZwviubmDf1QIrBgVMGced-4q0KY3XnaOFa13CFWiWdQnwc94Ld_s5fbN9hvT6DEPUsPYOjPDe8_4_4ItNsP5pLeRBndqVgvKRr_F-Use5H9SnAy04YmpLkHCB0bimtuTG4RkU2rsL6DWD0gEhpUoUMmji1s5XSgKYBgw-on1lm-o_u1cMjMDI7BKqOGStbibvls6qtwdjXPGFQ-0JdeXk6wBwjyYqDG-r1LDszf7F_UYl2w',
+    image: '/kashmiri_aari_kurti_main.jpg',
+    images: [
+      '/kashmiri_aari_kurti_main.jpg', // Kashmiri Aari Embroidered Kurti
+      '/chikankari_anarkali_front.jpg', // Chikankari Mulmul Anarkali Set
+      '/darika_black_front.jpg', // DARIKA Chanderi Cotton Kurti
+      '/varanga_navy_kurta_front.jpg', // Varanga Navy Blue Kurti
+    ],
     iconName: 'apparel',
   },
   {
     id: 'dresses' as const,
     title: 'Dresses',
     subtitle: 'Maxi, Ethnic Floral Gowns',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC3o4fSAUmbfIqhGB2T0rB4q-b-xaM7niM0YxfQc-wRkTQ6gGOKAdZmkgdqXT7IfVt77fuZCsodMO8_rQcUI9cnIs1rI5O7_ig7PqJggtL7yaeuXK7yj-cxNKfe6fFX7tCAYMD1SsAJ80pXwQ0evGizxsJ9C-Y0voy9dQeRRSgch7wETsAwLDxDxTWnYiqZ8lTgYwotDzfwmQcGPkv7d15hrkd1v43nEn7Rfv8o3TnfWTEJlFoFKVUMmw',
+    image: '/Madhu 1.webp',
+    images: [
+      '/Madhu 1.webp', // Madhu 1 (Madhuram Floral Embroidered Maxi)
+      '/Stitched Lehenga (Light Green.webp', // Stitched Lehenga (Light Green)
+      '/Styli Women Burgundy 1.webp', // Styli Burgundy Embellished Cape Dress
+      '/image1.webp', // Navy Embellished Gown
+    ],
     iconName: 'checkroom',
   },
   {
@@ -30,6 +47,10 @@ export const CATEGORY_CARDS = [
     title: 'Accessories',
     subtitle: 'Kundan Chokers, Bangles & Potlis',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC1ZXC3SIIQOxz4sD7ZVhImuO4C3wqe3AJRVDlQjL-vnCHlWasYhrTdR6pPoF63xNKU0Tr1ArlOlOeNk9Wbr4ZUBgVAL645Ug23-G_Ksx-gaZ9PM7mgaoAIkU6kyLbm1KIj0SQAEv-AGz4sCbL6o9n1vd8yAFaJip63XiG4HxZ_3fACfU_8nq2WiO4sZ_D9GFulqXRk9IocLF2ZDN6Ggk7UoKmh46ba5oXDDsr0NNVp6vrCu7WJr5NdzQ',
+    images: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuC1ZXC3SIIQOxz4sD7ZVhImuO4C3wqe3AJRVDlQjL-vnCHlWasYhrTdR6pPoF63xNKU0Tr1ArlOlOeNk9Wbr4ZUBgVAL645Ug23-G_Ksx-gaZ9PM7mgaoAIkU6kyLbm1KIj0SQAEv-AGz4sCbL6o9n1vd8yAFaJip63XiG4HxZ_3fACfU_8nq2WiO4sZ_D9GFulqXRk9IocLF2ZDN6Ggk7UoKmh46ba5oXDDsr0NNVp6vrCu7WJr5NdzQ',
+      'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=800&q=80',
+    ],
     iconName: 'diamond',
   },
 ];
