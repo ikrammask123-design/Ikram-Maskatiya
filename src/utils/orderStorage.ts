@@ -231,6 +231,50 @@ export function getStoredOrders(): StoreOrder[] {
   }
 }
 
+const LAST_PLACED_ORDER_KEY = 'zevioza_last_placed_order_id';
+
+export function getLastPlacedOrderId(): string | null {
+  try {
+    return localStorage.getItem(LAST_PLACED_ORDER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function findOrderForTracking(query: string): StoreOrder | undefined {
+  if (!query || !query.trim()) return undefined;
+  const cleanQuery = query.trim();
+  const upper = cleanQuery.toUpperCase();
+  const digitsOnly = cleanQuery.replace(/\D/g, '');
+  const allOrders = getStoredOrders();
+
+  return allOrders.find((order) => {
+    // Exact ID or without "ZV-" prefix
+    if (order.id.toUpperCase() === upper) return true;
+    if (order.id.replace(/^ZV-?/i, '').toUpperCase() === upper.replace(/^ZV-?/i, '')) return true;
+
+    // Tracking / AWB number
+    if (order.trackingNumber && order.trackingNumber.toUpperCase() === upper) return true;
+
+    // Phone number match (last 10 digits or 8 digits)
+    if (digitsOnly.length >= 8 && order.customer.phone) {
+      const orderPhoneDigits = order.customer.phone.replace(/\D/g, '');
+      if (orderPhoneDigits.endsWith(digitsOnly) || digitsOnly.endsWith(orderPhoneDigits)) {
+        return true;
+      }
+    }
+
+    // Email match
+    if (cleanQuery.includes('@') && order.customer.email) {
+      if (order.customer.email.toLowerCase() === cleanQuery.toLowerCase()) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+}
+
 export function saveOrderToStore(order: StoreOrder): void {
   try {
     const existing = getStoredOrders();
@@ -241,6 +285,7 @@ export function saveOrderToStore(order: StoreOrder): void {
     };
     const updated = [orderWithFlag, ...existing.filter((o) => o.id !== order.id)];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    localStorage.setItem(LAST_PLACED_ORDER_KEY, order.id);
     // Dispatch custom window event so any open admin view updates automatically
     window.dispatchEvent(new CustomEvent('zevioza_order_updated', { detail: orderWithFlag }));
   } catch (e) {

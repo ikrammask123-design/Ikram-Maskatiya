@@ -19,7 +19,7 @@ interface HomeViewProps {
   onSelectProduct: (product: Product) => void;
   onAddToCart: (product: Product) => void;
   onOpenStylistModal: () => void;
-  onOpenAdmin?: () => void;
+  onOpenTrackOrder?: () => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -31,8 +31,21 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onSelectProduct,
   onAddToCart,
   onOpenStylistModal,
-  onOpenAdmin,
+  onOpenTrackOrder,
 }) => {
+  const [secretTapCount, setSecretTapCount] = React.useState(0);
+
+  const handleSecretTap = () => {
+    setSecretTapCount((prev) => {
+      const next = prev + 1;
+      if (next >= 5) {
+        window.location.hash = 'admin';
+        return 0;
+      }
+      return next;
+    });
+  };
+
   // Flagship saree
   const flagshipSaree = products.find((p) => p.id === 'zv-01') || products[0];
 
@@ -276,9 +289,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 </span>
               </li>
               <li>
-                <span className="cursor-pointer hover:text-[#6d0026] transition-colors">
-                  Track Order
-                </span>
+                {onOpenTrackOrder ? (
+                  <button
+                    type="button"
+                    onClick={onOpenTrackOrder}
+                    className="cursor-pointer hover:text-[#6d0026] text-left transition-colors font-medium text-[#6d0026]"
+                  >
+                    Track Your Order
+                  </button>
+                ) : (
+                  <span className="cursor-pointer hover:text-[#6d0026] transition-colors">
+                    Track Order
+                  </span>
+                )}
               </li>
               <li>
                 <span className="cursor-pointer hover:text-[#6d0026] transition-colors">
@@ -326,26 +349,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
 
         <div className="max-w-[1360px] mx-auto pt-6 border-t border-[#debfc2]/30 flex flex-col sm:flex-row items-center justify-between text-xs text-[#8a7174] gap-4">
-          <p>© 2026 Zevioza Haute Ethnic. All rights reserved.</p>
+          <p
+            onClick={handleSecretTap}
+            className="cursor-default select-none"
+            title="Zevioza Haute Ethnic"
+          >
+            © 2026 Zevioza Haute Ethnic. All rights reserved.
+          </p>
           <div className="flex items-center gap-4 flex-wrap justify-center">
             <span className="hover:underline cursor-pointer">Privacy Charter</span>
             <span>•</span>
             <span className="hover:underline cursor-pointer">Terms of Salon</span>
             <span>•</span>
             <span className="hover:underline cursor-pointer">Silk Mark License</span>
-            {onOpenAdmin && (
-              <>
-                <span>•</span>
-                <button
-                  onClick={onOpenAdmin}
-                  className="hover:text-[#6d0026] text-[#8a7174] flex items-center gap-1 cursor-pointer transition-colors font-medium"
-                  title="Store Owner Portal (PIN Protected)"
-                >
-                  <Lock className="w-3 h-3" />
-                  <span>Merchant Portal</span>
-                </button>
-              </>
-            )}
           </div>
         </div>
       </footer>

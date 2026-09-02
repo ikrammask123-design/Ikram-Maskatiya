@@ -11,6 +11,7 @@ import { CartDrawer } from './components/CartDrawer';
 import { SearchModal } from './components/SearchModal';
 import { StylistModal } from './components/StylistModal';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
+import { TrackOrderModal } from './components/TrackOrderModal';
 import { CategoryId, Product, CartItem, Currency, NotificationItem } from './types';
 import { PRODUCTS, INITIAL_NOTIFICATIONS } from './data/products';
 
@@ -18,6 +19,65 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>('home');
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>('all');
   const [currency, setCurrency] = useState<Currency>('INR');
+
+  // Order Tracking Modal State
+  const [isTrackOrderOpen, setIsTrackOrderOpen] = useState<boolean>(false);
+  const [trackOrderIdForModal, setTrackOrderIdForModal] = useState<string | null>(null);
+
+  const handleOpenTrackOrder = (orderId?: string) => {
+    setTrackOrderIdForModal(orderId || null);
+    setIsTrackOrderOpen(true);
+  };
+
+  // Private Admin Access:
+  // 1. Secret URL Query: ?admin=true or ?owner=true
+  // 2. Secret URL Hash: #admin or #owner (e.g. store.com/#admin)
+  // 3. Secret Hotkey: Ctrl+Shift+A (or Cmd+Shift+A)
+  // 4. Secret 5-tap on footer copyright
+  useEffect(() => {
+    const checkPrivateAdminRoute = () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const hash = window.location.hash.toLowerCase();
+      if (
+        searchParams.get('admin') === 'true' ||
+        searchParams.get('owner') === 'true' ||
+        searchParams.get('admin') === '9825' ||
+        searchParams.get('portal') === 'owner' ||
+        hash === '#admin' ||
+        hash === '#owner' ||
+        hash === '#portal'
+      ) {
+        setActiveTab('admin');
+      }
+    };
+
+    checkPrivateAdminRoute();
+    window.addEventListener('hashchange', checkPrivateAdminRoute);
+
+    const handleAdminKeyCombo = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        setActiveTab((prev) => (prev === 'admin' ? 'home' : 'admin'));
+      }
+    };
+    window.addEventListener('keydown', handleAdminKeyCombo);
+
+    return () => {
+      window.removeEventListener('hashchange', checkPrivateAdminRoute);
+      window.removeEventListener('keydown', handleAdminKeyCombo);
+    };
+  }, []);
+
+  const handleBackToStore = () => {
+    if (window.location.hash === '#admin' || window.location.hash === '#owner') {
+      try {
+        window.history.replaceState(null, '', window.location.pathname);
+      } catch {
+        // ignore if iframe security restriction
+      }
+    }
+    setActiveTab('home');
+  };
 
   // Cart State (Initialized with 1 flagship item to showcase high-fidelity experience)
   const [cartItems, setCartItems] = useState<CartItem[]>([
@@ -163,6 +223,7 @@ export default function App() {
         currency={currency}
         setCurrency={setCurrency}
         onOpenStylistModal={() => setIsStylistModalOpen(true)}
+        onOpenTrackOrder={handleOpenTrackOrder}
       />
 
       {/* Main Content Area */}
@@ -177,7 +238,7 @@ export default function App() {
             onSelectProduct={(p) => setSelectedProductModal(p)}
             onAddToCart={(p) => handleAddToCart(p)}
             onOpenStylistModal={() => setIsStylistModalOpen(true)}
-            onOpenAdmin={() => setActiveTab('admin')}
+            onOpenTrackOrder={handleOpenTrackOrder}
           />
         )}
 
@@ -210,13 +271,13 @@ export default function App() {
             onAddToCart={(p) => handleAddToCart(p)}
             onSelectProduct={(p) => setSelectedProductModal(p)}
             onOpenStylistModal={() => setIsStylistModalOpen(true)}
-            onOpenAdmin={() => setActiveTab('admin')}
+            onOpenTrackOrder={handleOpenTrackOrder}
           />
         )}
 
         {activeTab === 'admin' && (
           <AdminPanel
-            onBackToStore={() => setActiveTab('home')}
+            onBackToStore={handleBackToStore}
             currency={currency}
           />
         )}
@@ -255,10 +316,19 @@ export default function App() {
         onUpdateQuantity={handleUpdateCartQuantity}
         onRemoveItem={handleRemoveCartItem}
         onClearCart={handleClearCart}
+        onOpenTrackOrder={handleOpenTrackOrder}
         onSelectProduct={(p) => {
           setIsCartOpen(false);
           setSelectedProductModal(p);
         }}
+      />
+
+      {/* Track Order Modal (Accessible by Customers) */}
+      <TrackOrderModal
+        isOpen={isTrackOrderOpen}
+        onClose={() => setIsTrackOrderOpen(false)}
+        currency={currency}
+        initialOrderId={trackOrderIdForModal}
       />
 
       {/* Search Modal */}

@@ -34,6 +34,7 @@ interface CartDrawerProps {
   onRemoveItem: (id: string) => void;
   onClearCart: () => void;
   onSelectProduct: (product: any) => void;
+  onOpenTrackOrder?: (orderId: string) => void;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -44,6 +45,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
+  onOpenTrackOrder,
 }) => {
   const [promoCode, setPromoCode] = useState('');
   const [discountApplied, setDiscountApplied] = useState(false);
@@ -788,11 +790,27 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </div>
               </div>
 
+              {/* Live Tracking Action */}
+              {onOpenTrackOrder && orderId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentId = orderId;
+                    handleFinishSuccess();
+                    onOpenTrackOrder(currentId);
+                  }}
+                  className="w-full mb-2 bg-[#6d0026] hover:bg-[#8e1b3b] text-white py-3 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                >
+                  <Truck className="w-4 h-4" />
+                  <span>Track This Order Live</span>
+                </button>
+              )}
+
               {/* WhatsApp Updates Action */}
               <button
                 type="button"
                 onClick={handleWhatsAppOrder}
-                className="w-full mb-3 bg-emerald-700 hover:bg-emerald-800 text-white py-3 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all"
+                className="w-full mb-3 bg-emerald-700 hover:bg-emerald-800 text-white py-3 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
               >
                 <MessageCircle className="w-4 h-4" />
                 <span>Receive Updates on WhatsApp</span>

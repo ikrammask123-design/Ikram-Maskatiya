@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   User,
   Heart,
@@ -13,10 +13,11 @@ import {
   Clock,
   ChevronRight,
   CheckCircle,
-  Lock,
+  Truck,
 } from 'lucide-react';
-import { Product, Currency } from '../types';
+import { Product, Currency, StoreOrder } from '../types';
 import { formatPrice } from './ProductCard';
+import { getStoredOrders } from '../utils/orderStorage';
 
 interface AccountViewProps {
   wishlistedProducts: Product[];
@@ -25,7 +26,7 @@ interface AccountViewProps {
   onAddToCart: (product: Product) => void;
   onSelectProduct: (product: Product) => void;
   onOpenStylistModal: () => void;
-  onOpenAdmin?: () => void;
+  onOpenTrackOrder?: (orderId?: string) => void;
 }
 
 export const AccountView: React.FC<AccountViewProps> = ({
@@ -35,29 +36,21 @@ export const AccountView: React.FC<AccountViewProps> = ({
   onAddToCart,
   onSelectProduct,
   onOpenStylistModal,
-  onOpenAdmin,
+  onOpenTrackOrder,
 }) => {
   const [activeTab, setActiveTab] = useState<'wishlist' | 'orders' | 'profile' | 'styling'>('wishlist');
+  const [ordersList, setOrdersList] = useState<StoreOrder[]>([]);
 
-  // Simulated Past Orders
-  const pastOrders = [
-    {
-      id: 'ZV-849102',
-      date: '24 Aug 2026',
-      total: 35500,
-      status: 'Delivered',
-      item: 'Rose Petal Silk Saree (Pure Mulberry Silk)',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuATPfJM-tzK8EEXMRvtRBauTg1BNTOSW1kZ7yuPSOjKtQ84msbvFkfOGgdeyuhTemMclnGCdXdJ1YXwNrEoQikqqHkCsYwGZAmxOIqbKZzZkNQY2hx73kheDa7cyq5f3GWn7Tmv-OPCB0Q9doUTtY5G2BzsNDPVHS7PbdMo2wDYpJuvZoU-FWF34iLTEfZUWS9cZP89YiZJVIaq4cJtzqDF2RMgijet8LR2ADfj5zPh5UQ9azgspWZNkQ',
-    },
-    {
-      id: 'ZV-729011',
-      date: '12 Jul 2026',
-      total: 18500,
-      status: 'Delivered',
-      item: 'Noor Hand-Embroidered Kurti Set (Chikankari)',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAaoSy_2XAZwviubmDf1QIrBgVMGced-4q0KY3XnaOFa13CFWiWdQnwc94Ld_s5fbN9hvT6DEPUsPYOjPDe8_4_4ItNsP5pLeRBndqVgvKRr_F-Use5H9SnAy04YmpLkHCB0bimtuTG4RkU2rsL6DWD0gEhpUoUMmji1s5XSgKYBgw-on1lm-o_u1cMjMDI7BKqOGStbibvls6qtwdjXPGFQ-0JdeXk6wBwjyYqDG-r1LDszf7F_UYl2w',
-    },
-  ];
+  useEffect(() => {
+    const loaded = getStoredOrders();
+    setOrdersList(loaded);
+
+    const handleUpdate = () => {
+      setOrdersList(getStoredOrders());
+    };
+    window.addEventListener('zevioza_order_updated', handleUpdate);
+    return () => window.removeEventListener('zevioza_order_updated', handleUpdate);
+  }, []);
 
   return (
     <div id="account-view-page" className="py-8 md:py-12 px-5 md:px-16 max-w-4xl mx-auto">
@@ -83,14 +76,14 @@ export const AccountView: React.FC<AccountViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {onOpenAdmin && (
+          {onOpenTrackOrder && (
             <button
-              onClick={onOpenAdmin}
+              onClick={() => onOpenTrackOrder()}
               className="bg-white hover:bg-[#fed9e2]/60 text-[#6d0026] border border-[#debfc2] px-4 py-2.5 rounded-full text-xs font-bold tracking-wider uppercase shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
-              title="Store Owner Orders & Payment Dashboard (PIN Protected)"
+              title="Track Package Status"
             >
-              <Lock className="w-3.5 h-3.5" />
-              Owner Portal
+              <Truck className="w-3.5 h-3.5" />
+              Track Shipment
             </button>
           )}
 
@@ -127,7 +120,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
           }`}
         >
           <Package className="w-4 h-4" />
-          Order History ({pastOrders.length})
+          Order History ({ordersList.length})
         </button>
 
         <button
@@ -222,43 +215,124 @@ export const AccountView: React.FC<AccountViewProps> = ({
       {/* Tab: Orders */}
       {activeTab === 'orders' && (
         <div className="flex flex-col gap-4">
-          {pastOrders.map((ord) => (
-            <div
-              key={ord.id}
-              className="bg-white p-5 rounded-xl border border-[#debfc2]/30 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-            >
-              <div className="flex gap-4 items-center">
-                <img
-                  src={ord.image}
-                  alt={ord.item}
-                  className="w-16 h-20 object-cover rounded-lg bg-[#f6f3f2]"
-                />
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-display text-sm font-bold text-[#6d0026]">
-                      {ord.id}
-                    </span>
-                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                      {ord.status}
-                    </span>
-                  </div>
-                  <h4 className="text-xs font-semibold text-[#1c1b1b]">{ord.item}</h4>
-                  <span className="text-[11px] text-[#8a7174] block mt-0.5">
-                    Ordered on {ord.date} • {formatPrice(ord.total, currency)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <button
-                  onClick={() => alert(`Invoice generated for order ${ord.id}`)}
-                  className="w-full sm:w-auto px-4 py-2 border border-[#debfc2] text-xs font-semibold text-[#574144] rounded-full hover:bg-[#fed9e2]/30"
-                >
-                  Download Invoice
-                </button>
-              </div>
+          <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-[#debfc2]/40">
+            <div>
+              <h4 className="text-xs font-bold text-[#1c1b1b] uppercase tracking-wider">
+                Live Order Book & Package Tracking
+              </h4>
+              <p className="text-[11px] text-[#8a7174]">
+                Instant real-time status with BlueDart, Delhivery & DTDC
+              </p>
             </div>
-          ))}
+            {onOpenTrackOrder && (
+              <button
+                onClick={() => onOpenTrackOrder()}
+                className="bg-[#6d0026] hover:bg-[#8e1b3b] text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <Truck className="w-3.5 h-3.5" />
+                <span>Track By Order ID</span>
+              </button>
+            )}
+          </div>
+
+          {ordersList.length === 0 ? (
+            <div className="bg-white p-10 rounded-2xl border border-[#debfc2]/30 text-center">
+              <Package className="w-10 h-10 text-[#debfc2] mx-auto mb-2" />
+              <p className="text-xs text-[#574144] font-medium">No past orders in this device yet.</p>
+              <p className="text-[11px] text-[#8a7174] mt-1">
+                When you buy any saree or gown, your order will appear here with live tracking.
+              </p>
+            </div>
+          ) : (
+            ordersList.map((ord) => {
+              const firstItem = ord.items[0];
+              const displayDate = new Date(ord.createdAt).toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              });
+
+              return (
+                <div
+                  key={ord.id}
+                  className="bg-white p-5 rounded-2xl border border-[#debfc2]/30 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                >
+                  <div className="flex gap-4 items-center">
+                    <img
+                      src={firstItem?.image || '/logo.svg'}
+                      alt={firstItem?.name || 'Package'}
+                      className="w-16 h-20 object-cover rounded-xl bg-[#f6f3f2] border border-[#debfc2]/30 shrink-0"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="font-mono text-xs font-bold text-[#1c1b1b] bg-[#fcf9f8] px-2 py-0.5 rounded-md border border-[#debfc2]/50">
+                          #{ord.id}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
+                            ord.fulfillmentStatus === 'delivered'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : ord.fulfillmentStatus === 'shipped'
+                              ? 'bg-blue-100 text-blue-800'
+                              : ord.fulfillmentStatus === 'processing'
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          {ord.fulfillmentStatus === 'delivered'
+                            ? 'Delivered'
+                            : ord.fulfillmentStatus === 'shipped'
+                            ? 'Dispatched (In Transit)'
+                            : ord.fulfillmentStatus === 'processing'
+                            ? 'Tailoring / Quality Inspection'
+                            : 'Confirmed'}
+                        </span>
+                      </div>
+                      <h4 className="text-xs font-bold text-[#1c1b1b]">
+                        {firstItem?.name || 'Boutique Outfit'}
+                        {ord.items.length > 1 && (
+                          <span className="text-[#8a7174] font-normal">
+                            {' '}
+                            (+{ord.items.length - 1} more)
+                          </span>
+                        )}
+                      </h4>
+                      <span className="text-[11px] text-[#8a7174] block mt-0.5">
+                        Ordered on {displayDate} • {formatPrice(ord.total, currency)}
+                        {ord.trackingNumber && (
+                          <span className="text-[#6d0026] ml-2 font-mono font-semibold">
+                            AWB: {ord.trackingNumber}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    {onOpenTrackOrder && (
+                      <button
+                        onClick={() => onOpenTrackOrder(ord.id)}
+                        className="flex-1 sm:flex-initial px-4 py-2 bg-[#6d0026] hover:bg-[#8e1b3b] text-white text-xs font-bold rounded-full transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Truck className="w-3.5 h-3.5" />
+                        <span>Track Package</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() =>
+                        alert(
+                          `Official Tax Invoice for Order #${ord.id}\nCustomer: ${ord.customer.name}\nTotal: ₹${ord.total}\nStatus: ${ord.paymentStatus.toUpperCase()}\nCourier: ${ord.courierPartner || 'Assigned soon'}`
+                        )
+                      }
+                      className="px-3 py-2 border border-[#debfc2] text-xs font-semibold text-[#574144] rounded-full hover:bg-[#fed9e2]/30 transition-colors"
+                    >
+                      Receipt
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       )}
 
