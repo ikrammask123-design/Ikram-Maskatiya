@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, Search, ShoppingBag, Heart, User, X, Sparkles, SlidersHorizontal } from 'lucide-react';
+import { Menu, Search, ShoppingBag, Heart, User, X, Sparkles, SlidersHorizontal, ShieldCheck, Lock } from 'lucide-react';
 import { CategoryId, Currency } from '../types';
 import { CURRENCY_RATES } from '../data/products';
 import { Logo } from './Logo';
@@ -57,15 +57,26 @@ export const Header: React.FC<HeaderProps> = ({
             <span>Autumn Silk Salon 2026 Live • Complimentary Express Shipping on Orders Over ₹2,000</span>
           </div>
           <div className="flex items-center gap-4 text-[10px]">
-            {onOpenStylistModal && (
-              <button
-                onClick={onOpenStylistModal}
-                className="hover:text-white underline cursor-pointer"
-              >
-                Book Private Stylist
-              </button>
-            )}
+            <button
+              onClick={() => setActiveTab('admin')}
+              className="hover:text-[#ffdea5] bg-white/10 hover:bg-white/20 text-[#fed9e2] px-2.5 py-0.5 rounded-full font-semibold transition-all flex items-center gap-1 cursor-pointer"
+              title="Store Owner Portal (Secured with PIN)"
+            >
+              <Lock className="w-2.5 h-2.5 text-[#ffdea5]" />
+              <span>Owner Portal</span>
+            </button>
             <span>•</span>
+            {onOpenStylistModal && (
+              <>
+                <button
+                  onClick={onOpenStylistModal}
+                  className="hover:text-white underline cursor-pointer"
+                >
+                  Book Private Stylist
+                </button>
+                <span>•</span>
+              </>
+            )}
             <div className="flex items-center gap-1">
               <span>Currency:</span>
               <select
@@ -173,6 +184,21 @@ export const Header: React.FC<HeaderProps> = ({
               title="Account & Orders"
             >
               <User className="w-5 h-5" />
+            </button>
+
+            {/* Admin Panel Button */}
+            <button
+              id="btn-nav-admin-panel"
+              onClick={() => setActiveTab('admin')}
+              className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wider transition-all border ${
+                activeTab === 'admin'
+                  ? 'bg-[#6d0026] text-white border-[#6d0026] shadow-xs'
+                  : 'bg-[#fed9e2]/60 hover:bg-[#fed9e2] text-[#6d0026] border-[#debfc2]'
+              }`}
+              title="Store Owner Admin Panel"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Admin</span>
             </button>
 
             {/* Shopping Bag Icon */}
@@ -327,6 +353,21 @@ export const Header: React.FC<HeaderProps> = ({
                 className="text-left font-display text-lg text-[#891738] hover:text-[#6d0026] py-1 font-semibold"
               >
                 ✨ Trending & New Arrivals
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setActiveTab('admin');
+                }}
+                className="text-left font-display text-base text-[#6d0026] bg-[#fed9e2]/50 p-3 rounded-xl border border-[#debfc2] font-bold flex items-center justify-between mt-2"
+              >
+                <div className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-[#6d0026]" />
+                  <span>Store Admin & Orders</span>
+                </div>
+                <span className="text-[10px] uppercase font-bold bg-[#6d0026] text-white px-2 py-0.5 rounded-full">
+                  PIN Protected
+                </span>
               </button>
             </div>
 

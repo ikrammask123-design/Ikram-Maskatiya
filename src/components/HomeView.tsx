@@ -7,7 +7,7 @@ import { TestimonialsSection } from './TestimonialsSection';
 import { NewsletterSection } from './NewsletterSection';
 import { Logo } from './Logo';
 import { CategoryId, Product, Currency } from '../types';
-import { ArrowRight, Sparkles, Award, ShieldCheck, Heart, MapPin, Phone, Mail } from 'lucide-react';
+import { ArrowRight, Sparkles, Award, ShieldCheck, Heart, MapPin, Phone, Mail, Lock } from 'lucide-react';
 import { formatPrice } from './ProductCard';
 
 interface HomeViewProps {
@@ -19,6 +19,7 @@ interface HomeViewProps {
   onSelectProduct: (product: Product) => void;
   onAddToCart: (product: Product) => void;
   onOpenStylistModal: () => void;
+  onOpenAdmin?: () => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -30,6 +31,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onSelectProduct,
   onAddToCart,
   onOpenStylistModal,
+  onOpenAdmin,
 }) => {
   // Flagship saree
   const flagshipSaree = products.find((p) => p.id === 'zv-01') || products[0];
@@ -325,12 +327,25 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
         <div className="max-w-[1360px] mx-auto pt-6 border-t border-[#debfc2]/30 flex flex-col sm:flex-row items-center justify-between text-xs text-[#8a7174] gap-4">
           <p>© 2026 Zevioza Haute Ethnic. All rights reserved.</p>
-          <div className="flex gap-4">
+          <div className="flex items-center gap-4 flex-wrap justify-center">
             <span className="hover:underline cursor-pointer">Privacy Charter</span>
             <span>•</span>
             <span className="hover:underline cursor-pointer">Terms of Salon</span>
             <span>•</span>
             <span className="hover:underline cursor-pointer">Silk Mark License</span>
+            {onOpenAdmin && (
+              <>
+                <span>•</span>
+                <button
+                  onClick={onOpenAdmin}
+                  className="hover:text-[#6d0026] text-[#8a7174] flex items-center gap-1 cursor-pointer transition-colors font-medium"
+                  title="Store Owner Portal (PIN Protected)"
+                >
+                  <Lock className="w-3 h-3" />
+                  <span>Merchant Portal</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </footer>

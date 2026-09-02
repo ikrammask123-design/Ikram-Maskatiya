@@ -6,12 +6,14 @@ import {
   Sparkles,
   Calendar,
   Shield,
+  ShieldCheck,
   Scissors,
   ShoppingBag,
   Trash2,
   Clock,
   ChevronRight,
   CheckCircle,
+  Lock,
 } from 'lucide-react';
 import { Product, Currency } from '../types';
 import { formatPrice } from './ProductCard';
@@ -23,6 +25,7 @@ interface AccountViewProps {
   onAddToCart: (product: Product) => void;
   onSelectProduct: (product: Product) => void;
   onOpenStylistModal: () => void;
+  onOpenAdmin?: () => void;
 }
 
 export const AccountView: React.FC<AccountViewProps> = ({
@@ -32,6 +35,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
   onAddToCart,
   onSelectProduct,
   onOpenStylistModal,
+  onOpenAdmin,
 }) => {
   const [activeTab, setActiveTab] = useState<'wishlist' | 'orders' | 'profile' | 'styling'>('wishlist');
 
@@ -78,13 +82,26 @@ export const AccountView: React.FC<AccountViewProps> = ({
           </div>
         </div>
 
-        <button
-          onClick={onOpenStylistModal}
-          className="bg-[#6d0026] text-white px-5 py-2.5 rounded-full text-xs font-semibold tracking-wider uppercase hover:bg-[#8e1b3b] shadow-xs flex items-center gap-1.5"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          Book Stylist
-        </button>
+        <div className="flex items-center gap-2">
+          {onOpenAdmin && (
+            <button
+              onClick={onOpenAdmin}
+              className="bg-white hover:bg-[#fed9e2]/60 text-[#6d0026] border border-[#debfc2] px-4 py-2.5 rounded-full text-xs font-bold tracking-wider uppercase shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Store Owner Orders & Payment Dashboard (PIN Protected)"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              Owner Portal
+            </button>
+          )}
+
+          <button
+            onClick={onOpenStylistModal}
+            className="bg-[#6d0026] text-white px-5 py-2.5 rounded-full text-xs font-semibold tracking-wider uppercase hover:bg-[#8e1b3b] shadow-xs flex items-center gap-1.5"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Book Stylist
+          </button>
+        </div>
       </div>
 
       {/* Navigation Sub-Tabs */}

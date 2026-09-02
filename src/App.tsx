@@ -5,6 +5,7 @@ import { HomeView } from './components/HomeView';
 import { CategoryView } from './components/CategoryView';
 import { AlertsView } from './components/AlertsView';
 import { AccountView } from './components/AccountView';
+import { AdminPanel } from './components/AdminPanel';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartDrawer } from './components/CartDrawer';
 import { SearchModal } from './components/SearchModal';
@@ -176,6 +177,7 @@ export default function App() {
             onSelectProduct={(p) => setSelectedProductModal(p)}
             onAddToCart={(p) => handleAddToCart(p)}
             onOpenStylistModal={() => setIsStylistModalOpen(true)}
+            onOpenAdmin={() => setActiveTab('admin')}
           />
         )}
 
@@ -208,6 +210,14 @@ export default function App() {
             onAddToCart={(p) => handleAddToCart(p)}
             onSelectProduct={(p) => setSelectedProductModal(p)}
             onOpenStylistModal={() => setIsStylistModalOpen(true)}
+            onOpenAdmin={() => setActiveTab('admin')}
+          />
+        )}
+
+        {activeTab === 'admin' && (
+          <AdminPanel
+            onBackToStore={() => setActiveTab('home')}
+            currency={currency}
           />
         )}
       </main>

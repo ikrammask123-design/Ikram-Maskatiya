@@ -67,3 +67,51 @@ export interface CurrencyRate {
   symbol: string;
   rate: number; // relative to INR
 }
+
+export type PaymentStatus = 'paid' | 'pending' | 'failed' | 'refunded';
+export type OrderFulfillmentStatus = 'new' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type PaymentMethodType = 'razorpay' | 'upi' | 'cod';
+
+export interface OrderItem {
+  id: string;
+  productId: string;
+  name: string;
+  image: string;
+  price: number;
+  quantity: number;
+  selectedSize?: string;
+  selectedColor?: string;
+  customStitching?: boolean;
+  notes?: string;
+}
+
+export interface CustomerDetails {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+}
+
+export interface StoreOrder {
+  id: string;
+  createdAt: string;
+  customer: CustomerDetails;
+  items: OrderItem[];
+  subtotal: number;
+  discountAmount: number;
+  giftWrapAmount: number;
+  total: number;
+  currency: Currency;
+  paymentMethod: PaymentMethodType;
+  paymentStatus: PaymentStatus;
+  fulfillmentStatus: OrderFulfillmentStatus;
+  transactionId?: string;
+  adminNotes?: string;
+  trackingNumber?: string;
+  courierPartner?: string;
+  isDemo?: boolean;
+}

@@ -19,10 +19,11 @@ import {
   ExternalLink,
   Lock,
 } from 'lucide-react';
-import { CartItem, Currency } from '../types';
+import { CartItem, Currency, StoreOrder, PaymentStatus } from '../types';
 import { formatPrice } from './ProductCard';
 import { CURRENCY_RATES } from '../data/products';
 import { Logo } from './Logo';
+import { saveOrderToStore } from '../utils/orderStorage';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -101,6 +102,38 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
     const newId = `ZV-${Math.floor(100000 + Math.random() * 900000)}`;
 
+    const recordOrder = (id: string, status: PaymentStatus = paymentMethod === 'cod' ? 'pending' : 'paid', txn?: string) => {
+      const storeOrder: StoreOrder = {
+        id,
+        createdAt: new Date().toISOString(),
+        customer: { ...shippingInfo },
+        items: items.map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          name: item.product.name,
+          image: item.selectedImage || item.product.image,
+          price: item.product.price + (item.customStitching ? 2500 : 0),
+          quantity: item.quantity,
+          selectedSize: item.selectedSize,
+          selectedColor: item.selectedColor,
+          customStitching: item.customStitching,
+          notes: item.notes,
+        })),
+        subtotal: rawSubtotal,
+        discountAmount,
+        giftWrapAmount: giftWrapCost,
+        total: grandTotal,
+        currency,
+        paymentMethod,
+        paymentStatus: status,
+        fulfillmentStatus: 'new',
+        transactionId: txn || (paymentMethod === 'upi' ? `UPI/${Date.now().toString().slice(-8)}@ok` : paymentMethod === 'razorpay' ? `pay_${Date.now().toString().slice(-10)}` : undefined),
+        adminNotes: paymentMethod === 'cod' ? `COD Order: Collect ₹${grandTotal} on delivery.` : 'Prepaid Order processed via checkout.',
+        isDemo: false,
+      };
+      saveOrderToStore(storeOrder);
+    };
+
     // If Razorpay is selected and SDK is available
     if (paymentMethod === 'razorpay' && typeof (window as any).Razorpay !== 'undefined') {
       const options = {
@@ -110,9 +143,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         name: 'Zevioza Boutique',
         description: `Boutique Order - ${newId}`,
         image: '/logo.svg',
-        handler: function (_response: any) {
+        handler: function (response: any) {
           setIsProcessingPayment(false);
           setOrderId(newId);
+          recordOrder(newId, 'paid', response?.razorpay_payment_id || `pay_${Date.now().toString().slice(-10)}`);
           setCheckoutStep('success');
         },
         prefill: {
@@ -140,12 +174,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         setTimeout(() => {
           setIsProcessingPayment(false);
           setOrderId(newId);
+          recordOrder(newId, 'paid');
           setCheckoutStep('success');
         }, 1200);
       } catch {
         setTimeout(() => {
           setIsProcessingPayment(false);
           setOrderId(newId);
+          recordOrder(newId, 'paid');
           setCheckoutStep('success');
         }, 1200);
       }
@@ -154,6 +190,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       setTimeout(() => {
         setOrderId(newId);
         setIsProcessingPayment(false);
+        recordOrder(newId, paymentMethod === 'cod' ? 'pending' : 'paid');
         setCheckoutStep('success');
       }, 1000);
     }
