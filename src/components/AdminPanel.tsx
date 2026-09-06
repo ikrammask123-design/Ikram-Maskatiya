@@ -41,6 +41,7 @@ import {
 import { StoreOrder, OrderFulfillmentStatus, PaymentStatus, Currency } from '../types';
 import {
   getStoredOrders,
+  syncOrdersWithServer,
   updateOrderFulfillment,
   updateOrderPayment,
   updateOrderDetails,
@@ -115,19 +116,53 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
     notes: 'Direct WhatsApp order',
   });
 
-  const loadOrders = () => {
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const loadOrders = async () => {
     setOrders(getStoredOrders());
+    try {
+      const serverList = await syncOrdersWithServer();
+      if (serverList && serverList.length > 0) {
+        setOrders(serverList);
+      }
+    } catch (e) {
+      // Fallback to local
+    }
+  };
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    try {
+      const latest = await syncOrdersWithServer();
+      setOrders(latest);
+      showToast(`Central sync complete: ${latest.length} total orders!`);
+    } catch {
+      showToast('Central sync offline, displaying local cache');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   useEffect(() => {
     loadOrders();
 
     const handleOrderUpdate = () => {
-      loadOrders();
+      setOrders(getStoredOrders());
     };
 
     window.addEventListener('zevioza_order_updated', handleOrderUpdate);
+
+    // Auto-poll central server every 6 seconds so incoming orders from customers/friends appear live
+    const pollTimer = setInterval(() => {
+      syncOrdersWithServer().then((latest) => {
+        if (latest && latest.length > 0) {
+          setOrders(latest);
+        }
+      });
+    }, 6000);
+
     return () => {
+      clearInterval(pollTimer);
       window.removeEventListener('zevioza_order_updated', handleOrderUpdate);
     };
   }, []);
@@ -618,6 +653,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
               <Film className="w-3.5 h-3.5 text-amber-300" />
               <span className="hidden md:inline">Ad Campaign Reel</span>
               <span className="bg-amber-400/20 text-amber-200 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase">Ready</span>
+            </button>
+
+            <button
+              onClick={handleManualSync}
+              disabled={isSyncing}
+              className="flex items-center gap-1.5 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 px-3.5 py-2 rounded-xl transition-all shadow-2xs cursor-pointer"
+              title="Sync orders live from Central Cloud Database"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-emerald-700 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? 'Syncing...' : 'Live Sync'}</span>
             </button>
 
             <button

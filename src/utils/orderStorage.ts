@@ -206,6 +206,67 @@ export const DEFAULT_ADMIN_PIN = '9825'; // Master PIN: 9825 (or zevioza2026)
 const ADMIN_PIN_KEY = 'zevioza_admin_pin_v1';
 const ADMIN_AUTH_SESSION_KEY = 'zevioza_admin_auth_active';
 
+// Central server order synchronization
+let isSyncingWithServer = false;
+
+export async function syncOrdersWithServer(): Promise<StoreOrder[]> {
+  if (typeof window === 'undefined' || isSyncingWithServer) {
+    return getStoredOrders();
+  }
+  isSyncingWithServer = true;
+  try {
+    const res = await fetch('/api/orders');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.orders)) {
+        const local = getStoredOrders();
+        const serverOrders = data.orders as StoreOrder[];
+        const map = new Map<string, StoreOrder>();
+
+        // Populate server orders
+        for (const o of serverOrders) {
+          map.set(o.id, o);
+        }
+
+        // Check if there are local orders not yet on server
+        const unsyncedLocals = local.filter((o) => !map.has(o.id));
+        if (unsyncedLocals.length > 0) {
+          fetch('/api/orders/bulk-sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orders: unsyncedLocals }),
+          }).catch((e) => console.warn('Bulk sync error', e));
+
+          for (const u of unsyncedLocals) {
+            map.set(u.id, u);
+          }
+        }
+
+        const merged = Array.from(map.values());
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        window.dispatchEvent(new CustomEvent('zevioza_order_updated', { detail: merged }));
+        return merged;
+      }
+    }
+  } catch (err) {
+    console.warn('Central server sync offline/delayed:', err);
+  } finally {
+    isSyncingWithServer = false;
+  }
+  return getStoredOrders();
+}
+
+// Auto-trigger sync on initial load and window focus
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    syncOrdersWithServer();
+  }, 100);
+
+  window.addEventListener('focus', () => {
+    syncOrdersWithServer();
+  });
+}
+
 export function getStoredOrders(): StoreOrder[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -213,7 +274,7 @@ export function getStoredOrders(): StoreOrder[] {
 
     if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
+      if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed;
       }
     }
@@ -288,6 +349,13 @@ export function saveOrderToStore(order: StoreOrder): void {
     localStorage.setItem(LAST_PLACED_ORDER_KEY, order.id);
     // Dispatch custom window event so any open admin view updates automatically
     window.dispatchEvent(new CustomEvent('zevioza_order_updated', { detail: orderWithFlag }));
+
+    // Send to central server so ALL devices and admin see it immediately
+    fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderWithFlag),
+    }).catch((err) => console.warn('Central server order registration error:', err));
   } catch (e) {
     console.error('Failed to save order to localStorage', e);
   }
@@ -336,6 +404,14 @@ export function updateOrderFulfillment(orderId: string, fulfillmentStatus: Order
     const updated = existing.map((o) => (o.id === orderId ? { ...o, fulfillmentStatus } : o));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
+
+    // Sync update to server
+    fetch(`/api/orders/${orderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fulfillmentStatus }),
+    }).catch((err) => console.warn('Failed to sync fulfillment update to server:', err));
+
     return updated;
   } catch (e) {
     console.error('Failed to update order fulfillment', e);
@@ -358,6 +434,17 @@ export function updateOrderPayment(orderId: string, paymentStatus: PaymentStatus
     });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
+
+    // Sync payment update to server
+    fetch(`/api/orders/${orderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        paymentStatus,
+        transactionId: txnId || `MANUAL-${Date.now()}`,
+      }),
+    }).catch((err) => console.warn('Failed to sync payment update to server:', err));
+
     return updated;
   } catch (e) {
     console.error('Failed to update order payment', e);
@@ -371,6 +458,14 @@ export function updateOrderDetails(orderId: string, updates: Partial<StoreOrder>
     const updated = existing.map((o) => (o.id === orderId ? { ...o, ...updates } : o));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
+
+    // Sync details update to server
+    fetch(`/api/orders/${orderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    }).catch((err) => console.warn('Failed to sync order details to server:', err));
+
     return updated;
   } catch (e) {
     console.error('Failed to update order details', e);
@@ -384,6 +479,12 @@ export function deleteStoredOrder(orderId: string): StoreOrder[] {
     const updated = existing.filter((o) => o.id !== orderId);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
+
+    // Sync delete to server
+    fetch(`/api/orders/${orderId}`, {
+      method: 'DELETE',
+    }).catch((err) => console.warn('Failed to sync delete to server:', err));
+
     return updated;
   } catch (e) {
     console.error('Failed to delete order', e);

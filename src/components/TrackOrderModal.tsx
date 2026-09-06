@@ -18,7 +18,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { StoreOrder, Currency } from '../types';
-import { findOrderForTracking, getLastPlacedOrderId, getStoredOrders } from '../utils/orderStorage';
+import { findOrderForTracking, getLastPlacedOrderId, getStoredOrders, saveOrderToStore } from '../utils/orderStorage';
 import { formatPrice } from './ProductCard';
 
 interface TrackOrderModalProps {
@@ -70,11 +70,25 @@ export const TrackOrderModal: React.FC<TrackOrderModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSearch = (e?: React.FormEvent) => {
+  const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!searchQuery.trim()) return;
 
-    const found = findOrderForTracking(searchQuery);
+    let found = findOrderForTracking(searchQuery);
+    if (!found) {
+      try {
+        const res = await fetch(`/api/orders/track?q=${encodeURIComponent(searchQuery.trim())}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.order) {
+            found = data.order;
+            saveOrderToStore(found as StoreOrder);
+          }
+        }
+      } catch (err) {
+        console.warn('Tracking server fetch error:', err);
+      }
+    }
     setSearchedOrder(found || null);
     setHasSearched(true);
   };
