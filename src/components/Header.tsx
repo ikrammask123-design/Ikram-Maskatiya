@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Menu, Search, ShoppingBag, Heart, User, X, Sparkles, SlidersHorizontal, Truck } from 'lucide-react';
 import { CategoryId, Currency } from '../types';
 import { CURRENCY_RATES } from '../data/products';
 import { Logo } from './Logo';
+import { getCurrentUser, AUTH_CHANGE_EVENT } from '../utils/authStorage';
 
 interface HeaderProps {
   activeTab: string;
@@ -35,6 +36,13 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [quickSearchInput, setQuickSearchInput] = useState('');
+  const [currentUser, setCurrentUser] = useState(getCurrentUser());
+
+  useEffect(() => {
+    const handleAuth = () => setCurrentUser(getCurrentUser());
+    window.addEventListener(AUTH_CHANGE_EVENT, handleAuth);
+    return () => window.removeEventListener(AUTH_CHANGE_EVENT, handleAuth);
+  }, []);
 
   const handleNavClick = (tab: string, category?: CategoryId) => {
     setActiveTab(tab);
@@ -186,10 +194,17 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="btn-nav-user-account"
               onClick={() => setActiveTab('account')}
-              className="p-2 hover:text-[#6d0026] hover:bg-[#fed9e2]/30 rounded-full transition-colors"
-              title="Account & Orders"
+              className={`p-1.5 sm:px-2.5 sm:py-1.5 hover:text-[#6d0026] hover:bg-[#fed9e2]/40 rounded-full transition-colors flex items-center gap-1.5 ${
+                currentUser ? 'text-[#6d0026] bg-[#fed9e2]/40 font-semibold' : ''
+              }`}
+              title={currentUser ? `Logged in as ${currentUser.name}` : 'Account & Orders'}
             >
               <User className="w-5 h-5" />
+              {currentUser && (
+                <span className="hidden lg:inline text-xs truncate max-w-[90px]">
+                  {currentUser.name.split(' ')[0]}
+                </span>
+              )}
             </button>
 
             {/* Track Order Button */}

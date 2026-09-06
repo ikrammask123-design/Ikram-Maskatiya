@@ -25,6 +25,7 @@ import { formatPrice } from './ProductCard';
 import { CURRENCY_RATES } from '../data/products';
 import { Logo } from './Logo';
 import { saveOrderToStoreAsync, formatWhatsAppPhone } from '../utils/orderStorage';
+import { getCurrentUser, associateOrderWithUser } from '../utils/authStorage';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -54,9 +55,23 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const [giftWrap, setGiftWrap] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<'cart' | 'checkout' | 'success'>('cart');
 
-  // Checkout Form State: initialized empty or from customer's previous checkout
+  // Checkout Form State: initialized from logged-in user, previous checkout, or clean empty form
   const [shippingInfo, setShippingInfo] = useState(() => {
     try {
+      const currentUser = getCurrentUser();
+      if (currentUser) {
+        const defAddr = currentUser.addresses?.find((a) => a.isDefault) || currentUser.addresses?.[0];
+        return {
+          name: currentUser.name || '',
+          email: currentUser.email || '',
+          phone: currentUser.phone || '',
+          address: defAddr?.address || '',
+          city: defAddr?.city || '',
+          state: defAddr?.state || 'Gujarat',
+          pincode: defAddr?.pincode || '',
+          country: 'India',
+        };
+      }
       const saved = localStorage.getItem('zevioza_customer_shipping');
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -188,6 +203,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         isDemo: false,
       };
       await saveOrderToStoreAsync(storeOrder);
+      associateOrderWithUser(storeOrder);
     };
 
     if (paymentMethod === 'cod') {

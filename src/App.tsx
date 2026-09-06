@@ -303,6 +303,7 @@ export default function App() {
             onSelectProduct={(p) => setSelectedProductModal(p)}
             onOpenStylistModal={() => setIsStylistModalOpen(true)}
             onOpenTrackOrder={handleOpenTrackOrder}
+            onShopNow={() => setActiveTab('home')}
           />
         )}
 

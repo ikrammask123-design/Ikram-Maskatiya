@@ -115,3 +115,34 @@ export interface StoreOrder {
   courierPartner?: string;
   isDemo?: boolean;
 }
+
+export interface UserAddress {
+  id: string;
+  tag: string;
+  name: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  isDefault?: boolean;
+}
+
+export interface UserAccount {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  addresses: UserAddress[];
+  savedMeasurements?: {
+    bust?: string;
+    waist?: string;
+    hip?: string;
+    shoulder?: string;
+    blouseLength?: string;
+  };
+  memberTier?: 'Member' | 'Silver' | 'Gold' | 'Privilege Club';
+  loyaltyPoints?: number;
+  createdAt: string;
+  lastLoginAt?: string;
+}
