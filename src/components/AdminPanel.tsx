@@ -35,6 +35,8 @@ import {
   LogOut,
   KeyRound,
   ShieldAlert,
+  Film,
+  Play,
 } from 'lucide-react';
 import { StoreOrder, OrderFulfillmentStatus, PaymentStatus, Currency } from '../types';
 import {
@@ -89,6 +91,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
   const [editingTrackingId, setEditingTrackingId] = useState<string | null>(null);
   const [trackingInput, setTrackingInput] = useState({ courier: '', trackingNumber: '' });
   const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false);
+  const [isAdVideoModalOpen, setIsAdVideoModalOpen] = useState(false);
+  const [adVideoTab, setAdVideoTab] = useState<'viral' | 'collection' | 'saree'>('viral');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Manual order form state
@@ -604,6 +608,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Lock / Logout</span>
+            </button>
+
+            <button
+              onClick={() => setIsAdVideoModalOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-[#6d0026] to-[#a82046] hover:from-[#57001e] hover:to-[#8e1b3b] text-white px-3.5 py-2 rounded-xl transition-all shadow-xs cursor-pointer"
+              title="Preview & Download Merged Zevioza Ad Reel"
+            >
+              <Film className="w-3.5 h-3.5 text-amber-300" />
+              <span className="hidden md:inline">Ad Campaign Reel</span>
+              <span className="bg-amber-400/20 text-amber-200 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase">Ready</span>
             </button>
 
             <button
@@ -1661,6 +1675,409 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Merged Advertisement Reel Modal */}
+      {isAdVideoModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in">
+          <div className="bg-[#1c1b1b] text-white rounded-3xl max-w-4xl w-full p-5 sm:p-8 shadow-2xl border border-amber-500/30 relative my-auto">
+            <button
+              onClick={() => setIsAdVideoModalOpen(false)}
+              className="absolute top-5 right-5 text-neutral-400 hover:text-white p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-5 pb-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-[#6d0026] text-white flex items-center justify-center shadow-lg">
+                  <Film className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-lg sm:text-xl text-white flex items-center gap-2">
+                    Zevioza Studio Ad Campaigns
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wide">
+                      HD Ready
+                    </span>
+                  </h3>
+                  <p className="text-xs text-neutral-400">Cinematic 9:16 Vertical Videos with Sitar Fusion Music • Instagram, Meta & WhatsApp Ads</p>
+                </div>
+              </div>
+
+              {adVideoTab === 'viral' ? (
+                <a
+                  href="/zevioza_viral_ad_2026.mp4"
+                  download="Zevioza_Viral_Model_Runway_Ad.mp4"
+                  className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg transition-all"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download Viral Model Reel (.MP4)</span>
+                </a>
+              ) : adVideoTab === 'collection' ? (
+                <a
+                  href="/zevioza_collection_ad.mp4"
+                  download="Zevioza_Madhu_Lehenga_Ad_Reel.mp4"
+                  className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg transition-all"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download Collection Reel (.MP4)</span>
+                </a>
+              ) : (
+                <a
+                  href="/zevioza_ad_final.mp4"
+                  download="Zevioza_Saree_Voiceover_Reel.mp4"
+                  className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg transition-all"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download Saree Reel (.MP4)</span>
+                </a>
+              )}
+            </div>
+
+            {/* Campaign Selector Tabs */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6 bg-white/5 p-1.5 rounded-2xl border border-white/10">
+              <button
+                type="button"
+                onClick={() => setAdVideoTab('viral')}
+                className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  adVideoTab === 'viral'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-neutral-950 shadow-md'
+                    : 'text-neutral-300 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Viral Model Runway Reel (14.7s)</span>
+                <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wide">Hot</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAdVideoTab('collection')}
+                className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  adVideoTab === 'collection'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-neutral-950 shadow-md'
+                    : 'text-neutral-300 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Film className="w-3.5 h-3.5" />
+                <span>Collection Showcase (19s)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAdVideoTab('saree')}
+                className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  adVideoTab === 'saree'
+                    ? 'bg-gradient-to-r from-[#6d0026] to-[#a82046] text-white shadow-md'
+                    : 'text-neutral-300 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Film className="w-3.5 h-3.5" />
+                <span>Classic Saree Walk (10.2s)</span>
+              </button>
+            </div>
+
+            {/* Tab 0: Viral Model Runway Ad (Merged 4 Videos) */}
+            {adVideoTab === 'viral' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="lg:col-span-5 flex flex-col items-center">
+                  <div className="relative w-full max-w-[280px] sm:max-w-[300px] aspect-[9/16] bg-black rounded-2xl overflow-hidden shadow-2xl border-2 border-amber-500/50">
+                    <video
+                      key="viral-model-video"
+                      src="/zevioza_viral_ad_2026.mp4"
+                      controls
+                      autoPlay
+                      playsInline
+                      loop
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <p className="text-[11px] text-amber-300/80 mt-2 text-center font-medium">
+                    14.7s • 720x1280 (9:16) • Clean Model Showcase + Chill Boutique Luxury BGM
+                  </p>
+                </div>
+
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="bg-white/5 rounded-2xl p-4 border border-white/10 space-y-2.5">
+                    <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Refined Viral Edits & Visual Enhancements
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-start gap-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-white block">100% Clean & Aesthetic Model Showcase</span>
+                          <span className="text-neutral-400 text-[11px]">No heavy black boxes blocking the model or outfits. Pure cinematic flow with color grading.</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-white block">Chill Luxury Boutique BGM</span>
+                          <span className="text-neutral-400 text-[11px]">Soothing Rhodes keys, mellow warm bass, soft clicks. Zero loud or jarring tones — pleasant & premium.</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-white block">Minimal Mid-Video Hallmark</span>
+                          <span className="text-neutral-400 text-[11px]">Subtle luxury floating badge: ✦ WWW.ZEVIOZA.IN ✦ placed elegantly without hiding the dress.</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-white block">Dedicated Outro Screen at Video End</span>
+                          <span className="text-neutral-400 text-[11px]">Special Festive Price Drop, UP TO 60% OFF, Code ZEVIOZA10, & Shop Now CTA appear only at the end.</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ready-to-use Ad Copy */}
+                  <div className="bg-white/5 rounded-2xl p-4 border border-white/10 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                        High-Converting Instagram Caption
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const copyText = `🔥 SPECIAL FESTIVE PRICE DROP! ✨\nLook royal this season with Zevioza's Designer Couture Collection!\n\n👑 Direct from Surat's Master Artisans\n👗 Premium Georgette Twirl Gowns & Crimson Maroon Anarkalis\n🎉 FLAT 50% OFF + Extra 10% OFF with Code: ZEVIOZA10\n🚚 Free Express Shipping Across India\n💵 Cash on Delivery (COD) Available\n\n👉 Shop Now directly at: www.zevioza.in\n(Hurry, limited festive pieces in stock!)\n\n#Zevioza #FestiveFashion #IndianEthnicWear #AnarkaliSuit #DesignerGown #FestiveSale #SuratCouture #BridalWear`;
+                          navigator.clipboard.writeText(copyText);
+                          showToast('Viral ad caption copied to clipboard!');
+                        }}
+                        className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 bg-amber-400/10 px-2.5 py-1 rounded-lg border border-amber-400/20 cursor-pointer"
+                      >
+                        Copy Caption
+                      </button>
+                    </div>
+                    <pre className="text-[11px] leading-relaxed text-neutral-300 bg-black/40 p-3 rounded-xl border border-white/5 font-sans whitespace-pre-wrap select-all">
+{`🔥 SPECIAL FESTIVE PRICE DROP! ✨
+Look royal this season with Zevioza's Designer Couture Collection!
+
+👑 Direct from Surat's Master Artisans
+👗 Premium Georgette Twirl Gowns & Crimson Maroon Anarkalis
+🎉 FLAT 50% OFF + Extra 10% OFF with Code: ZEVIOZA10
+🚚 Free Express Shipping Across India
+💵 Cash on Delivery (COD) Available
+
+👉 Shop Now directly at: www.zevioza.in
+(Hurry, limited festive pieces in stock!)
+
+#Zevioza #FestiveFashion #IndianEthnicWear #AnarkaliSuit #DesignerGown #FestiveSale #SuratCouture #BridalWear`}
+                    </pre>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <a
+                      href="/zevioza_viral_ad_2026.mp4"
+                      download="Zevioza_Viral_Model_Runway_Ad.mp4"
+                      className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-lg"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download Viral Reel (9.7 MB MP4)
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setIsAdVideoModalOpen(false)}
+                      className="px-5 py-3 bg-white/10 hover:bg-white/20 text-neutral-300 rounded-xl text-xs font-semibold transition-all"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 1: Collection Reel (Madhu + Stitched Lehenga) */}
+            {adVideoTab === 'collection' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="lg:col-span-5 flex flex-col items-center">
+                  <div className="relative w-full max-w-[280px] sm:max-w-[300px] aspect-[9/16] bg-black rounded-2xl overflow-hidden shadow-2xl border-2 border-amber-500/40">
+                    <video
+                      key="collection-video"
+                      src="/zevioza_collection_ad.mp4"
+                      controls
+                      autoPlay
+                      playsInline
+                      loop
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <p className="text-[11px] text-amber-300/80 mt-2 text-center font-medium">
+                    19.0s • 720x1280 (9:16) • Studio Sitar Fusion Beat
+                  </p>
+                </div>
+
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="bg-white/5 rounded-2xl p-4 border border-white/10 space-y-2.5">
+                    <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Reel Features & Cinematic Directing
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-start gap-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-white block">Madhu Designer Series</span>
+                          <span className="text-neutral-400 text-[11px]">Dynamic slow pan-down & zoom-in on intricate mirror and thread embroidery.</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-white block">Pista Green Lehenga</span>
+                          <span className="text-neutral-400 text-[11px]">Bridal heavy flare showcase with close-up heritage border detailing.</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-white block">Smooth Camera Dissolves</span>
+                          <span className="text-neutral-400 text-[11px]">8 motion crossfades mimicking high-end fashion runway transitions.</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-white block">Attractive Fusion Music</span>
+                          <span className="text-neutral-400 text-[11px]">Upbeat sitar + percussion beat looped and EQ-balanced to captivate buyers.</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ready-to-use Ad Copy */}
+                  <div className="bg-white/5 rounded-2xl p-4 border border-white/10 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                        Instagram / Meta Ad Caption
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const copyText = `✨ Elevate Your Festive Wardrobe with Zevioza ✨\nFeaturing the all-new Madhu Designer Ensemble & Stitched Pista Green Bridal Lehenga!\n\n👑 Master Surat Handcrafting\n👗 Ready-to-Wear Luxurious Flare\n🚚 Free All-India Express Delivery\n💵 Cash on Delivery Available\n\n👉 Tap link in bio to shop now: www.zevioza.in\n🔥 Special Festive Offer: Use code ZEVIOZA10 for 10% OFF!\n\n#Zevioza #StitchedLehenga #MadhuCollection #IndianEthnicWear #FestiveOutfit #SuratTextiles`;
+                          navigator.clipboard.writeText(copyText);
+                          showToast('Collection ad caption copied to clipboard!');
+                        }}
+                        className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 bg-amber-400/10 px-2.5 py-1 rounded-lg border border-amber-400/20 cursor-pointer"
+                      >
+                        Copy Caption
+                      </button>
+                    </div>
+                    <pre className="text-[11px] leading-relaxed text-neutral-300 bg-black/40 p-3 rounded-xl border border-white/5 font-sans whitespace-pre-wrap select-all">
+{`✨ Elevate Your Festive Wardrobe with Zevioza ✨
+Featuring the all-new Madhu Designer Ensemble & Stitched Pista Green Bridal Lehenga!
+
+👑 Master Surat Handcrafting
+👗 Ready-to-Wear Luxurious Flare
+🚚 Free All-India Express Delivery
+💵 Cash on Delivery Available
+
+👉 Tap link in bio to shop now: www.zevioza.in
+🔥 Special Festive Offer: Use code ZEVIOZA10 for 10% OFF!
+
+#Zevioza #StitchedLehenga #MadhuCollection #IndianEthnicWear #FestiveOutfit #SuratTextiles`}
+                    </pre>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <a
+                      href="/zevioza_collection_ad.mp4"
+                      download="Zevioza_Madhu_Lehenga_Ad_Reel.mp4"
+                      className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-lg"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download Collection Video (4.7 MB MP4)
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setIsAdVideoModalOpen(false)}
+                      className="px-5 py-3 bg-white/10 hover:bg-white/20 text-neutral-300 rounded-xl text-xs font-semibold transition-all"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2: Saree Walk Reel (Voiceover + Sitar BGM) */}
+            {adVideoTab === 'saree' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="lg:col-span-5 flex flex-col items-center">
+                  <div className="relative w-full max-w-[280px] sm:max-w-[300px] aspect-[9/16] bg-black rounded-2xl overflow-hidden shadow-2xl border-2 border-white/10">
+                    <video
+                      key="saree-video"
+                      src="/zevioza_ad_final.mp4"
+                      controls
+                      autoPlay
+                      playsInline
+                      loop
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <p className="text-[11px] text-neutral-400 mt-2 text-center">
+                    10.2s • Dual-layer audio (Hindi Voiceover + Sitar Fusion BGM)
+                  </p>
+                </div>
+
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="bg-white/5 rounded-2xl p-4 border border-white/10 space-y-2.5">
+                    <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Key Highlights
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-start gap-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-white block">No "Mujeero" Watermarks</span>
+                          <span className="text-neutral-400 text-[11px]">Foreign watermarks completely removed.</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-white block">Full Hindi Voiceover Sync</span>
+                          <span className="text-neutral-400 text-[11px]">Words align precisely with model poses and website CTA.</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <a
+                      href="/zevioza_ad_final.mp4"
+                      download="Zevioza_Official_Ad_Reel.mp4"
+                      className="flex-1 bg-[#6d0026] hover:bg-[#8e1b3b] text-white py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-lg"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download Saree Video (4.3 MB MP4)
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setIsAdVideoModalOpen(false)}
+                      className="px-5 py-3 bg-white/10 hover:bg-white/20 text-neutral-300 rounded-xl text-xs font-semibold transition-all"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
