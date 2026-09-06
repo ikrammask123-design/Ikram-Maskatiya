@@ -23,7 +23,7 @@ import { CartItem, Currency, StoreOrder, PaymentStatus } from '../types';
 import { formatPrice } from './ProductCard';
 import { CURRENCY_RATES } from '../data/products';
 import { Logo } from './Logo';
-import { saveOrderToStore } from '../utils/orderStorage';
+import { saveOrderToStoreAsync } from '../utils/orderStorage';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -104,7 +104,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
     const newId = `ZV-${Math.floor(100000 + Math.random() * 900000)}`;
 
-    const recordOrder = (id: string, status: PaymentStatus = paymentMethod === 'cod' ? 'pending' : 'paid', txn?: string) => {
+    const recordOrder = async (id: string, status: PaymentStatus = paymentMethod === 'cod' ? 'pending' : 'paid', txn?: string) => {
       const storeOrder: StoreOrder = {
         id,
         createdAt: new Date().toISOString(),
@@ -133,7 +133,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         adminNotes: paymentMethod === 'cod' ? `COD Order: Collect ₹${grandTotal} on delivery.` : 'Prepaid Order processed via checkout.',
         isDemo: false,
       };
-      saveOrderToStore(storeOrder);
+      await saveOrderToStoreAsync(storeOrder);
     };
 
     // If Razorpay is selected and SDK is available
@@ -145,10 +145,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         name: 'Zevioza Boutique',
         description: `Boutique Order - ${newId}`,
         image: '/logo.svg',
-        handler: function (response: any) {
+        handler: async function (response: any) {
           setIsProcessingPayment(false);
           setOrderId(newId);
-          recordOrder(newId, 'paid', response?.razorpay_payment_id || `pay_${Date.now().toString().slice(-10)}`);
+          await recordOrder(newId, 'paid', response?.razorpay_payment_id || `pay_${Date.now().toString().slice(-10)}`);
           setCheckoutStep('success');
         },
         prefill: {
@@ -173,28 +173,28 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         });
         rzp.open();
         // Fallback simulation in sandbox/test if dummy key
-        setTimeout(() => {
-          setIsProcessingPayment(false);
+        setTimeout(async () => {
           setOrderId(newId);
-          recordOrder(newId, 'paid');
+          await recordOrder(newId, 'paid');
+          setIsProcessingPayment(false);
           setCheckoutStep('success');
         }, 1200);
       } catch {
-        setTimeout(() => {
-          setIsProcessingPayment(false);
+        setTimeout(async () => {
           setOrderId(newId);
-          recordOrder(newId, 'paid');
+          await recordOrder(newId, 'paid');
+          setIsProcessingPayment(false);
           setCheckoutStep('success');
         }, 1200);
       }
     } else {
       // Direct UPI or COD flow
-      setTimeout(() => {
+      (async () => {
         setOrderId(newId);
+        await recordOrder(newId, paymentMethod === 'cod' ? 'pending' : 'paid');
         setIsProcessingPayment(false);
-        recordOrder(newId, paymentMethod === 'cod' ? 'pending' : 'paid');
         setCheckoutStep('success');
-      }, 1000);
+      })();
     }
   };
 
@@ -212,8 +212,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       )
       .join('\n');
 
+    const trackingNotice = orderId ? `*Order ID:* ${orderId}\n` : '';
+
     const message = encodeURIComponent(
-      `🛍️ *New Order Request - Zevioza Boutique*\n\n` +
+      `🛍️ *New Order Confirmation - Zevioza Boutique*\n\n` +
+        trackingNotice +
         `*Customer Name:* ${shippingInfo.name}\n` +
         `*Phone:* ${shippingInfo.phone}\n` +
         `*Email:* ${shippingInfo.email}\n` +

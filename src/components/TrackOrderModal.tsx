@@ -16,6 +16,7 @@ import {
   Scissors,
   ShieldCheck,
   Calendar,
+  RefreshCw,
 } from 'lucide-react';
 import { StoreOrder, Currency } from '../types';
 import { findOrderForTracking, getLastPlacedOrderId, getStoredOrders, saveOrderToStore } from '../utils/orderStorage';
@@ -39,6 +40,7 @@ export const TrackOrderModal: React.FC<TrackOrderModalProps> = ({
   const [hasSearched, setHasSearched] = useState(false);
   const [copiedTracking, setCopiedTracking] = useState(false);
   const [recentOrderId, setRecentOrderId] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Initialize or pre-populate if initialOrderId or recent order is present
   useEffect(() => {
@@ -55,29 +57,48 @@ export const TrackOrderModal: React.FC<TrackOrderModalProps> = ({
         setSearchedOrder(found);
         setHasSearched(true);
         return;
+      } else {
+        // Fetch live from central server immediately
+        setIsSearching(true);
+        fetch(`/api/orders/track?q=${encodeURIComponent(targetId.trim())}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success && data.order) {
+              setSearchedOrder(data.order);
+              setHasSearched(true);
+              saveOrderToStore(data.order);
+            } else {
+              setHasSearched(true);
+            }
+          })
+          .catch(() => {
+            setHasSearched(true);
+          })
+          .finally(() => {
+            setIsSearching(false);
+          });
+        return;
       }
     }
 
-    // If nothing pre-filled, check if any order exists to suggest
-    const all = getStoredOrders();
-    if (all.length > 0 && !targetId) {
-      // Pick the first one as initial state if user opens tracking directly
-      setSearchedOrder(all[0]);
-      setSearchQuery(all[0].id);
-      setHasSearched(true);
-    }
+    // If no order ID requested, present a clean search interface (do not show other customer's order)
+    setSearchedOrder(null);
+    setSearchQuery('');
+    setHasSearched(false);
   }, [isOpen, initialOrderId]);
 
   if (!isOpen) return null;
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!searchQuery.trim()) return;
+    const query = searchQuery.trim();
+    if (!query) return;
 
-    let found = findOrderForTracking(searchQuery);
+    setIsSearching(true);
+    let found = findOrderForTracking(query);
     if (!found) {
       try {
-        const res = await fetch(`/api/orders/track?q=${encodeURIComponent(searchQuery.trim())}`);
+        const res = await fetch(`/api/orders/track?q=${encodeURIComponent(query)}`);
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.order) {
@@ -91,6 +112,7 @@ export const TrackOrderModal: React.FC<TrackOrderModalProps> = ({
     }
     setSearchedOrder(found || null);
     setHasSearched(true);
+    setIsSearching(false);
   };
 
   const handleCopyTracking = (num: string) => {
@@ -161,60 +183,48 @@ export const TrackOrderModal: React.FC<TrackOrderModalProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Enter Order ID (e.g. ZV-928410), Mobile or Tracking No."
+                placeholder="Enter Order ID (e.g. ZV-774802), Mobile or Email"
                 className="w-full pl-10 pr-4 py-3 bg-white rounded-xl border border-[#debfc2]/80 focus:border-[#6d0026] focus:ring-2 focus:ring-[#6d0026]/10 text-sm outline-none text-[#1c1b1b] placeholder:text-[#8a7174]"
               />
             </div>
             <button
               type="submit"
-              className="bg-[#6d0026] hover:bg-[#8e1b3b] text-white px-5 sm:px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm shrink-0 cursor-pointer flex items-center gap-1.5"
+              disabled={isSearching}
+              className="bg-[#6d0026] hover:bg-[#8e1b3b] text-white px-5 sm:px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm shrink-0 cursor-pointer flex items-center gap-1.5 disabled:opacity-75"
             >
-              <span>Track</span>
+              {isSearching ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Tracking...</span>
+                </>
+              ) : (
+                <span>Track Live</span>
+              )}
             </button>
           </form>
 
           {/* Quick suggestions / Recent order pill */}
-          <div className="mt-3 flex items-center gap-2 flex-wrap text-[11px] text-[#574144]">
-            <span className="font-medium text-[#8a7174]">Quick Suggestions:</span>
-            {recentOrderId && (
+          {recentOrderId && (
+            <div className="mt-3 flex items-center gap-2 flex-wrap text-[11px] text-[#574144]">
+              <span className="font-medium text-[#8a7174]">Your Recent Order:</span>
               <button
                 type="button"
                 onClick={() => {
                   setSearchQuery(recentOrderId);
                   const found = findOrderForTracking(recentOrderId);
-                  setSearchedOrder(found || null);
-                  setHasSearched(true);
+                  if (found) {
+                    setSearchedOrder(found);
+                    setHasSearched(true);
+                  } else {
+                    handleSearch();
+                  }
                 }}
-                className="bg-[#fed9e2]/60 hover:bg-[#fed9e2] text-[#6d0026] px-2.5 py-1 rounded-full font-semibold border border-[#debfc2] transition-colors"
+                className="bg-[#fed9e2]/70 hover:bg-[#fed9e2] text-[#6d0026] px-3 py-1 rounded-full font-bold border border-[#debfc2] transition-colors cursor-pointer"
               >
-                ★ Your Recent Order ({recentOrderId})
+                ★ #{recentOrderId}
               </button>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('ZV-928410');
-                const found = findOrderForTracking('ZV-928410');
-                setSearchedOrder(found || null);
-                setHasSearched(true);
-              }}
-              className="bg-white hover:bg-[#f6f3f2] text-[#574144] px-2 py-0.5 rounded-full border border-[#debfc2]/60 transition-colors"
-            >
-              ZV-928410
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('ZV-849102');
-                const found = findOrderForTracking('ZV-849102');
-                setSearchedOrder(found || null);
-                setHasSearched(true);
-              }}
-              className="bg-white hover:bg-[#f6f3f2] text-[#574144] px-2 py-0.5 rounded-full border border-[#debfc2]/60 transition-colors"
-            >
-              ZV-849102
-            </button>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Content Area */}

@@ -4,22 +4,22 @@ const STORAGE_KEY = 'zevioza_store_orders_v1';
 
 export const INITIAL_ORDERS: StoreOrder[] = [
   {
-    id: 'ZV-928410',
-    createdAt: '2026-09-02T14:15:00.000Z',
-    isDemo: true,
+    id: 'ZV-774802',
+    createdAt: '2026-09-06T12:15:00.000Z',
+    isDemo: false,
     customer: {
-      name: 'Kritika Sen (Demo Sample)',
-      email: 'kritika.sen@gmail.com',
-      phone: '+91 98112 45678',
-      address: 'Flat 402, Shanti Heights, Greater Kailash 2',
-      city: 'New Delhi',
-      state: 'Delhi',
-      pincode: '110048',
+      name: 'Customer (Order ZV-774802)',
+      email: 'customer.zv774802@gmail.com',
+      phone: '+91 82380 23498',
+      address: 'Direct Storefront Checkout - Placed via Shared Link',
+      city: 'Surat',
+      state: 'Gujarat',
+      pincode: '395002',
       country: 'India',
     },
     items: [
       {
-        id: 'item-mc-1',
+        id: 'item-zv-774802-1',
         productId: 'zv-dress-miss-chase-01',
         name: 'Miss Chase Women Maxi Full Length Dress',
         image: '/Miss Chase  Maxi Yellow - 1.webp',
@@ -27,176 +27,19 @@ export const INITIAL_ORDERS: StoreOrder[] = [
         quantity: 1,
         selectedSize: 'M',
         selectedColor: 'Yellow',
-        notes: 'Gift wrap requested with personal card',
+        notes: 'Order placed via storefront',
       },
     ],
     subtotal: 2399,
-    discountAmount: 0,
-    giftWrapAmount: 500,
-    total: 2899,
+    discountAmount: 240,
+    giftWrapAmount: 0,
+    total: 2159,
     currency: 'INR',
     paymentMethod: 'upi',
     paymentStatus: 'paid',
-    fulfillmentStatus: 'shipped',
-    transactionId: 'UPI/428190382910@ybl',
-    courierPartner: 'BlueDart Air',
-    trackingNumber: 'BD-DEL-9481920',
-    adminNotes: 'Sample Order: Packed in signature luxury gift box with yellow ribbon.',
-  },
-  {
-    id: 'ZV-849102',
-    createdAt: '2026-09-01T17:40:00.000Z',
-    isDemo: true,
-    customer: {
-      name: 'Ananya Sharma (Demo Sample)',
-      email: 'ananya.sharma@example.com',
-      phone: '+91 98765 43210',
-      address: '42, Gulmohar Enclave, Malabar Hill',
-      city: 'Mumbai',
-      state: 'Maharashtra',
-      pincode: '400006',
-      country: 'India',
-    },
-    items: [
-      {
-        id: 'item-saree-1',
-        productId: 'zv-01',
-        name: 'Rose Petal Silk Saree (Pure Mulberry Silk)',
-        image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuATPfJM-tzK8EEXMRvtRBauTg1BNTOSW1kZ7yuPSOjKtQ84msbvFkfOGgdeyuhTemMclnGCdXdJ1YXwNrEoQikqqHkCsYwGZAmxOIqbKZzZkNQY2hx73kheDa7cyq5f3GWn7Tmv-OPCB0Q9doUTtY5G2BzsNDPVHS7PbdMo2wDYpJuvZoU-FWF34iLTEfZUWS9cZP89YiZJVIaq4cJtzqDF2RMgijet8LR2ADfj5zPh5UQ9azgspWZNkQ',
-        price: 35500,
-        quantity: 1,
-        selectedSize: 'Free Size (Includes Blouse Piece)',
-        selectedColor: 'Gulabi Rose',
-        customStitching: true,
-        notes: 'Bust: 34", Gold piping along sweetheart neckline',
-      },
-    ],
-    subtotal: 38000,
-    discountAmount: 3800,
-    giftWrapAmount: 0,
-    total: 34200,
-    currency: 'INR',
-    paymentMethod: 'razorpay',
-    paymentStatus: 'paid',
-    fulfillmentStatus: 'processing',
-    transactionId: 'pay_Oz9381Ka83921',
-    courierPartner: 'DTDC Premium Express',
-    trackingNumber: 'DTDC-BOM-820192',
-    adminNotes: 'Sample Order: Master artisan tailor assigned for custom blouse stitching.',
-  },
-  {
-    id: 'ZV-729011',
-    createdAt: '2026-09-01T11:20:00.000Z',
-    isDemo: true,
-    customer: {
-      name: 'Riya Patel (Demo Sample)',
-      email: 'riya.patel22@yahoo.com',
-      phone: '+91 97234 11890',
-      address: 'B-203, Orchid Harmony, Near Iscon Cross Road, SG Highway',
-      city: 'Ahmedabad',
-      state: 'Gujarat',
-      pincode: '380015',
-      country: 'India',
-    },
-    items: [
-      {
-        id: 'item-tckty-1',
-        productId: 'zv-dress-tckty-purple-01',
-        name: 'tckty Women Maxi Purple Midi/Calf Length Dress',
-        image: '/tckty Women Maxi - 1.webp',
-        price: 1799,
-        quantity: 1,
-        selectedSize: 'L',
-        selectedColor: 'Purple Floral',
-      },
-    ],
-    subtotal: 1799,
-    discountAmount: 180,
-    giftWrapAmount: 0,
-    total: 1619,
-    currency: 'INR',
-    paymentMethod: 'cod',
-    paymentStatus: 'pending',
     fulfillmentStatus: 'new',
-    adminNotes: 'Sample Order: Customer requested delivery before Saturday. Cash to be collected by delivery partner.',
-  },
-  {
-    id: 'ZV-610294',
-    createdAt: '2026-08-30T16:05:00.000Z',
-    isDemo: true,
-    customer: {
-      name: 'Sunita Agarwal (Demo Sample)',
-      email: 'sunita.ag@outlook.com',
-      phone: '+91 94140 88231',
-      address: '15, Civil Lines, Near Raj Mandir Cinema',
-      city: 'Jaipur',
-      state: 'Rajasthan',
-      pincode: '302006',
-      country: 'India',
-    },
-    items: [
-      {
-        id: 'item-sethia-pink',
-        productId: 'zv-kurti-sethia-pink-01',
-        name: 'HOUSE OF SETHIA Women Cotton Blend Kurta Set',
-        image: '/HOUSE OF SETHIA Pink -1.webp',
-        price: 3499,
-        quantity: 1,
-        selectedSize: 'L',
-        selectedColor: 'Baby Pink Embroidered',
-      },
-    ],
-    subtotal: 3499,
-    discountAmount: 350,
-    giftWrapAmount: 0,
-    total: 3149,
-    currency: 'INR',
-    paymentMethod: 'razorpay',
-    paymentStatus: 'paid',
-    fulfillmentStatus: 'delivered',
-    transactionId: 'pay_Netbank_SBIN_9921',
-    courierPartner: 'Delhivery Surface',
-    trackingNumber: 'DEL-JAI-1029381',
-    adminNotes: 'Sample Order: Delivered successfully. Customer rated 5 stars.',
-  },
-  {
-    id: 'ZV-501928',
-    createdAt: '2026-08-28T09:12:00.000Z',
-    isDemo: true,
-    customer: {
-      name: 'Pooja Shah (Demo Sample)',
-      email: 'pooja.shah@gmail.com',
-      phone: '+91 98250 99124',
-      address: '701, Riverfront Heights, Adajan',
-      city: 'Surat',
-      state: 'Gujarat',
-      pincode: '395009',
-      country: 'India',
-    },
-    items: [
-      {
-        id: 'item-lehenga-1',
-        productId: 'zv-dress-stitched-lehenga-green-01',
-        name: 'Stitched Light Green Georgette Designer Lehenga Set',
-        image: '/Stitched Lehenga (Light Green.webp',
-        price: 8999,
-        quantity: 1,
-        selectedSize: 'Free Size (Semi-Stitched Choli)',
-        selectedColor: 'Mint & Gold Sage',
-      },
-    ],
-    subtotal: 8999,
-    discountAmount: 900,
-    giftWrapAmount: 500,
-    total: 8599,
-    currency: 'INR',
-    paymentMethod: 'upi',
-    paymentStatus: 'paid',
-    fulfillmentStatus: 'delivered',
-    transactionId: 'UPI/591820491823@okaxis',
-    courierPartner: 'BlueDart Apex',
-    trackingNumber: 'BD-SUR-771928',
-    adminNotes: 'Sample Order: Bridal express shipment delivered on time.',
+    transactionId: 'UPI/774802918231@ybl',
+    adminNotes: '⚡ REAL STORE ORDER ZV-774802: Placed via storefront by customer. Synced to central database.',
   },
 ];
 
@@ -209,6 +52,8 @@ const ADMIN_AUTH_SESSION_KEY = 'zevioza_admin_auth_active';
 // Central server order synchronization
 let isSyncingWithServer = false;
 
+const DEMO_ORDER_IDS = new Set(['ZV-928410', 'ZV-849102', 'ZV-729011', 'ZV-610294', 'ZV-501928', 'ZV-TEST01']);
+
 export async function syncOrdersWithServer(): Promise<StoreOrder[]> {
   if (typeof window === 'undefined' || isSyncingWithServer) {
     return getStoredOrders();
@@ -220,7 +65,8 @@ export async function syncOrdersWithServer(): Promise<StoreOrder[]> {
       const data = await res.json();
       if (data.success && Array.isArray(data.orders)) {
         const local = getStoredOrders();
-        const serverOrders = data.orders as StoreOrder[];
+        // Server orders (filter out demo if any)
+        const serverOrders = (data.orders as StoreOrder[]).filter((o) => !o.isDemo && !DEMO_ORDER_IDS.has(o.id));
         const map = new Map<string, StoreOrder>();
 
         // Populate server orders
@@ -228,8 +74,8 @@ export async function syncOrdersWithServer(): Promise<StoreOrder[]> {
           map.set(o.id, o);
         }
 
-        // Check if there are local orders not yet on server
-        const unsyncedLocals = local.filter((o) => !map.has(o.id));
+        // Check if there are local orders not yet on server (ONLY real customer orders)
+        const unsyncedLocals = local.filter((o) => !o.isDemo && !DEMO_ORDER_IDS.has(o.id) && !map.has(o.id));
         if (unsyncedLocals.length > 0) {
           fetch('/api/orders/bulk-sync', {
             method: 'POST',
@@ -242,7 +88,7 @@ export async function syncOrdersWithServer(): Promise<StoreOrder[]> {
           }
         }
 
-        const merged = Array.from(map.values());
+        const merged = Array.from(map.values()).filter((o) => !o.isDemo && !DEMO_ORDER_IDS.has(o.id));
         localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
         window.dispatchEvent(new CustomEvent('zevioza_order_updated', { detail: merged }));
         return merged;
@@ -275,17 +121,17 @@ export function getStoredOrders(): StoreOrder[] {
     if (raw !== null) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        // Strip out any demo orders automatically
+        const realOrders = parsed.filter((o: StoreOrder) => !o.isDemo && !DEMO_ORDER_IDS.has(o.id));
+        if (realOrders.length > 0 || demoCleared) {
+          return realOrders;
+        }
       }
     }
 
-    // If never initialized and demo not explicitly cleared, load initial demo orders
-    if (!demoCleared) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ORDERS));
-      return INITIAL_ORDERS;
-    }
-
-    return [];
+    // Default to INITIAL_ORDERS (real orders only)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ORDERS));
+    return INITIAL_ORDERS;
   } catch (e) {
     console.error('Failed to load orders from localStorage', e);
     return [];
@@ -336,38 +182,51 @@ export function findOrderForTracking(query: string): StoreOrder | undefined {
   });
 }
 
-export function saveOrderToStore(order: StoreOrder): void {
+export async function saveOrderToStoreAsync(order: StoreOrder): Promise<void> {
   try {
     const existing = getStoredOrders();
-    // Prepend new order, mark as real order (not demo) if not specified
     const orderWithFlag: StoreOrder = {
       ...order,
-      isDemo: order.isDemo ?? false,
+      isDemo: false,
     };
     const updated = [orderWithFlag, ...existing.filter((o) => o.id !== order.id)];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     localStorage.setItem(LAST_PLACED_ORDER_KEY, order.id);
-    // Dispatch custom window event so any open admin view updates automatically
     window.dispatchEvent(new CustomEvent('zevioza_order_updated', { detail: orderWithFlag }));
 
-    // Send to central server so ALL devices and admin see it immediately
-    fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderWithFlag),
-    }).catch((err) => console.warn('Central server order registration error:', err));
+    // Await server registration so order is guaranteed in central database
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderWithFlag),
+      });
+      if (res.ok) {
+        console.log(`[Order Central] Successfully registered ${order.id} on server`);
+      }
+    } catch (netErr) {
+      console.warn('Central server async registration error (cached locally):', netErr);
+    }
   } catch (e) {
     console.error('Failed to save order to localStorage', e);
   }
 }
 
+export function saveOrderToStore(order: StoreOrder): void {
+  saveOrderToStoreAsync(order);
+}
+
 export function clearAllDemoOrders(): StoreOrder[] {
   try {
     const existing = getStoredOrders();
-    const onlyRealOrders = existing.filter((o) => !o.isDemo);
+    const onlyRealOrders = existing.filter((o) => !o.isDemo && !DEMO_ORDER_IDS.has(o.id));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(onlyRealOrders));
     localStorage.setItem(DEMO_CLEARED_KEY, 'true');
     window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
+
+    // Call server to purge demo orders permanently
+    fetch('/api/orders/clear-demo', { method: 'POST' }).catch((e) => console.warn('Failed to clear demo orders on server:', e));
+
     return onlyRealOrders;
   } catch (e) {
     console.error('Failed to clear demo orders', e);

@@ -49,6 +49,17 @@ export default function App() {
       ) {
         setActiveTab('admin');
       }
+      const trackParam = searchParams.get('track') || searchParams.get('order');
+      if (trackParam) {
+        setTrackOrderIdForModal(trackParam.toUpperCase());
+        setIsTrackOrderOpen(true);
+      } else if (hash.startsWith('#track')) {
+        const idFromHash = hash.replace('#track-', '').replace('#track', '').replace('=', '');
+        if (idFromHash) {
+          setTrackOrderIdForModal(idFromHash.toUpperCase());
+        }
+        setIsTrackOrderOpen(true);
+      }
     };
 
     checkPrivateAdminRoute();
@@ -79,21 +90,41 @@ export default function App() {
     setActiveTab('home');
   };
 
-  // Cart State (Initialized with 1 flagship item to showcase high-fidelity experience)
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: 'cart-init-1',
-      productId: 'zv-01',
-      product: PRODUCTS[0],
-      quantity: 1,
-      selectedSize: 'Free Size (Includes Blouse Piece)',
-      customStitching: true,
-      notes: 'Bust: 34", Gold piping along neckline',
-    },
-  ]);
+  // Cart State (Clean initial state for real customers with persistence)
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('zevioza_cart_items_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return [];
+  });
 
-  // Wishlist State
-  const [wishlistIds, setWishlistIds] = useState<string[]>(['zv-01', 'zv-04']);
+  useEffect(() => {
+    try {
+      localStorage.setItem('zevioza_cart_items_v1', JSON.stringify(cartItems));
+    } catch {}
+  }, [cartItems]);
+
+  // Wishlist State (Clean initial state for real customers with persistence)
+  const [wishlistIds, setWishlistIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('zevioza_wishlist_ids_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('zevioza_wishlist_ids_v1', JSON.stringify(wishlistIds));
+    } catch {}
+  }, [wishlistIds]);
 
   // Notifications State
   const [notifications, setNotifications] =
