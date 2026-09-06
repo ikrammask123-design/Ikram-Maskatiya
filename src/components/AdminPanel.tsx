@@ -37,6 +37,10 @@ import {
   ShieldAlert,
   Film,
   Play,
+  Edit3,
+  Send,
+  User,
+  Copy,
 } from 'lucide-react';
 import { StoreOrder, OrderFulfillmentStatus, PaymentStatus, Currency } from '../types';
 import {
@@ -45,6 +49,8 @@ import {
   updateOrderFulfillment,
   updateOrderPayment,
   updateOrderDetails,
+  updateOrderCustomer,
+  formatWhatsAppPhone,
   deleteStoredOrder,
   resetToDefaultOrders,
   saveOrderToStore,
@@ -95,6 +101,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
   const [isAdVideoModalOpen, setIsAdVideoModalOpen] = useState(false);
   const [adVideoTab, setAdVideoTab] = useState<'viral' | 'collection' | 'saree'>('viral');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Customer WhatsApp Notification Modal State
+  const [whatsAppModalOrder, setWhatsAppModalOrder] = useState<StoreOrder | null>(null);
+  const [whatsAppTargetPhone, setWhatsAppTargetPhone] = useState('');
+  const [whatsAppMessageType, setWhatsAppMessageType] = useState<'confirmation' | 'dispatch' | 'cod_pending' | 'custom'>('confirmation');
+  const [whatsAppCustomText, setWhatsAppCustomText] = useState('');
+  const [whatsAppPhoneError, setWhatsAppPhoneError] = useState('');
+
+  // Customer Contact Info Quick-Edit Modal State
+  const [editingCustomerOrder, setEditingCustomerOrder] = useState<StoreOrder | null>(null);
+  const [editCustomerForm, setEditCustomerForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+  });
 
   // Manual order form state
   const [manualOrder, setManualOrder] = useState({
@@ -367,17 +392,143 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
     showToast('Orders exported to CSV spreadsheet successfully!');
   };
 
-  const handleWhatsAppCustomer = (order: StoreOrder) => {
-    const message = encodeURIComponent(
-      `Namaste ${order.customer.name} ji,\n\n` +
-        `This is regarding your Zevioza Boutique Order *#${order.id}* for ₹${order.total}.\n` +
-        `• *Current Status:* ${order.fulfillmentStatus.toUpperCase()}\n` +
-        `• *Payment:* ${order.paymentStatus.toUpperCase()} (${order.paymentMethod.toUpperCase()})\n` +
-        (order.courierPartner ? `• *Courier:* ${order.courierPartner}\n` : '') +
-        (order.trackingNumber ? `• *Tracking AWB:* ${order.trackingNumber}\n` : '') +
-        `\nThank you for choosing Zevioza. Please let us know if you have any customization questions!`
+  const handleOpenWhatsAppModal = (order: StoreOrder) => {
+    setWhatsAppModalOrder(order);
+    const digits = order.customer.phone.replace(/\D/g, '');
+    const isOwnerPhone = digits.endsWith('8238023498');
+
+    // If it's the owner's phone or invalid placeholder, clear or flag it
+    setWhatsAppTargetPhone(isOwnerPhone ? '' : order.customer.phone);
+    setWhatsAppMessageType('confirmation');
+    setWhatsAppCustomText('');
+    setWhatsAppPhoneError(
+      isOwnerPhone
+        ? '⚠️ Is order mein boutique ka support number (82380 23498) save tha. Kripya customer ka actual WhatsApp mobile number enter karein.'
+        : ''
     );
-    window.open(`https://wa.me/${order.customer.phone.replace(/[^0-9]/g, '')}?text=${message}`, '_blank');
+  };
+
+  const handleOpenEditCustomer = (order: StoreOrder) => {
+    setEditingCustomerOrder(order);
+    setEditCustomerForm({
+      name: order.customer.name,
+      phone: order.customer.phone,
+      email: order.customer.email,
+      address: order.customer.address,
+      city: order.customer.city,
+      state: order.customer.state,
+      pincode: order.customer.pincode,
+    });
+  };
+
+  const handleSaveCustomerDetails = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCustomerOrder) return;
+    updateOrderCustomer(editingCustomerOrder.id, editCustomerForm);
+    loadOrders();
+    showToast('Customer information updated and saved successfully!');
+    setEditingCustomerOrder(null);
+  };
+
+  const getFormattedWhatsAppMessage = (order: StoreOrder, type: string): string => {
+    const itemsList = order.items
+      .map(
+        (item) =>
+          `• *${item.name}* (Qty: ${item.quantity}${item.selectedColor ? `, Shade: ${item.selectedColor}` : ''}${
+            item.selectedSize ? `, Size: ${item.selectedSize}` : ''
+          }) - ₹${item.price * item.quantity}`
+      )
+      .join('\n');
+
+    if (type === 'confirmation') {
+      return (
+        `Namaste ${order.customer.name} ji,\n\n` +
+        `Aapka Zevioza Boutique Order *#${order.id}* successfully confirm ho gaya hai! 🎉\n\n` +
+        `• *Order Total:* ₹${order.total}\n` +
+        `• *Payment Mode:* ${
+          order.paymentMethod === 'cod'
+            ? `Cash on Delivery (₹${order.total} to collect on delivery)`
+            : order.paymentMethod === 'upi'
+            ? 'Direct UPI'
+            : 'Prepaid Online'
+        }\n` +
+        `• *Payment Status:* ${order.paymentStatus === 'paid' ? 'PAID ✅' : 'PENDING ⏳ (Pay at delivery)'}\n` +
+        `• *Delivery Address:* ${order.customer.address}, ${order.customer.city} - ${order.customer.pincode}\n\n` +
+        `*Items Ordered:*\n${itemsList}\n\n` +
+        `Hum aapka package safely pack kar rahe hain. Dispatch hote hi aapko tracking details yahan WhatsApp par send kar di jayegi.\n\n` +
+        `Kisi bhi customization ya sizing query ke liye aap is number par WhatsApp reply kar sakte hain.\n\n` +
+        `Warm regards,\n*Zevioza Boutique*`
+      );
+    }
+
+    if (type === 'dispatch') {
+      return (
+        `Namaste ${order.customer.name} ji,\n\n` +
+        `Aapka Zevioza Boutique Order *#${order.id}* dispatch ho gaya hai! 🚚\n\n` +
+        (order.courierPartner ? `• *Courier Partner:* ${order.courierPartner}\n` : '• *Courier:* Express Surface Delivery\n') +
+        (order.trackingNumber ? `• *Tracking Number (AWB):* ${order.trackingNumber}\n` : '') +
+        `• *Delivery Address:* ${order.customer.address}, ${order.customer.city}\n` +
+        `• *Amount to Pay:* ${
+          order.paymentStatus === 'paid'
+            ? '₹0 (Order Already Paid)'
+            : `₹${order.total} (Cash on Delivery)`
+        }\n\n` +
+        `Estimated Delivery: 3-5 business days.\n\n` +
+        `Warm regards,\n*Zevioza Boutique*`
+      );
+    }
+
+    if (type === 'cod_pending') {
+      return (
+        `Namaste ${order.customer.name} ji,\n\n` +
+        `Yeh message aapke Zevioza Cash on Delivery Order *#${order.id}* ke dispatch confirmation ke liye hai.\n\n` +
+        `• *Total Order Amount:* ₹${order.total} (To be paid in cash at doorstep)\n` +
+        `• *Delivery Address:* ${order.customer.address}, ${order.customer.city} - ${order.customer.pincode}\n\n` +
+        `Kripya confirm karein ki aap delivery lene ke liye available rahenge? Reply with *CONFIRM* to dispatch today.\n\n` +
+        `Warm regards,\n*Zevioza Boutique*`
+      );
+    }
+
+    return (
+      whatsAppCustomText ||
+      `Namaste ${order.customer.name} ji, regarding your Zevioza Boutique Order #${order.id}.`
+    );
+  };
+
+  const handleSendWhatsAppToCustomer = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!whatsAppModalOrder) return;
+
+    const raw = whatsAppTargetPhone.trim();
+    const digits = raw.replace(/\D/g, '');
+
+    if (!digits || digits.length < 10) {
+      setWhatsAppPhoneError('Kripya valid 10-digit customer mobile number enter karein.');
+      return;
+    }
+
+    if (digits.endsWith('8238023498')) {
+      setWhatsAppPhoneError(
+        '⚠️ Yeh number aapka apna store number (82380 23498) hai! Kripya customer ka mobile number daliye taaki message customer ko jaye, aapko nahi.'
+      );
+      return;
+    }
+
+    const cleanPhone = formatWhatsAppPhone(raw);
+
+    // Save updated phone to order permanently if changed
+    if (raw !== whatsAppModalOrder.customer.phone) {
+      updateOrderCustomer(whatsAppModalOrder.id, { phone: raw });
+      loadOrders();
+      showToast(`Customer phone number permanently saved for order #${whatsAppModalOrder.id}`);
+    }
+
+    const message = getFormattedWhatsAppMessage(whatsAppModalOrder, whatsAppMessageType);
+    const encoded = encodeURIComponent(message);
+
+    window.open(`https://wa.me/${cleanPhone}?text=${encoded}`, '_blank');
+    setWhatsAppModalOrder(null);
+    showToast(`WhatsApp chat opened for customer (${raw})!`);
   };
 
   // Financial calculations
@@ -978,7 +1129,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                       ) : (
                         <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full text-[11px] border border-amber-300/60 shadow-2xs">
                           <Clock className="w-3.5 h-3.5 text-amber-600" />
-                          PENDING • {order.paymentMethod === 'cod' ? 'CASH ON DELIVERY' : 'UNPAID'}
+                          {order.paymentMethod === 'cod'
+                            ? 'PENDING • CASH ON DELIVERY'
+                            : order.paymentMethod === 'upi'
+                            ? 'PENDING • UPI VERIFICATION'
+                            : 'PENDING • UNPAID'}
                         </span>
                       )}
 
@@ -1033,12 +1188,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                           </a>
 
                           <button
-                            onClick={() => handleWhatsAppCustomer(order)}
-                            className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg transition-all shadow-2xs"
-                            title="Chat on WhatsApp with order details"
+                            onClick={() => handleOpenWhatsAppModal(order)}
+                            className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-3 py-1.5 rounded-lg transition-all shadow-2xs cursor-pointer"
+                            title="Send order confirmation or updates to customer on WhatsApp"
                           >
                             <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>WhatsApp</span>
+                            <span>Send Msg to Customer</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleOpenEditCustomer(order)}
+                            className="flex items-center gap-1 text-[11px] font-medium text-[#574144] hover:text-[#1c1b1b] bg-white hover:bg-[#fbf9f8] border border-[#debfc2]/60 px-2 py-1.5 rounded-lg transition-all cursor-pointer"
+                            title="Edit Customer Phone / Name / Address"
+                          >
+                            <Edit3 className="w-3 h-3 text-[#6d0026]" />
+                            <span>Edit Info</span>
                           </button>
                         </div>
                       </div>
@@ -1234,7 +1398,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>
-                            {isPaid ? 'Mark Payment as Pending' : '✓ Mark as Paid (Cash Collected)'}
+                            {isPaid
+                              ? 'Revert Payment to Pending'
+                              : order.paymentMethod === 'cod'
+                              ? `✓ Confirm Cash Received (₹${order.total})`
+                              : `✓ Confirm UPI Received (₹${order.total})`}
                           </span>
                         </button>
 
@@ -1626,6 +1794,299 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                   className="bg-[#6d0026] hover:bg-[#8e1b3b] text-white px-5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs"
                 >
                   Create & Save Order
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Send WhatsApp to Customer Modal */}
+      {whatsAppModalOrder && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl relative my-8 border border-[#debfc2]">
+            <div className="flex items-start justify-between pb-3 border-b border-[#debfc2]/40 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200">
+                  <MessageCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-base text-[#1c1b1b]">
+                    Send Order Message to Customer
+                  </h3>
+                  <p className="text-xs text-[#8a7174]">
+                    Order #{whatsAppModalOrder.id} • {whatsAppModalOrder.customer.name}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWhatsAppModalOrder(null)}
+                className="p-1.5 text-[#8a7174] hover:text-[#1c1b1b] rounded-full cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSendWhatsAppToCustomer} className="space-y-4 text-xs">
+              {/* Recipient Phone Input */}
+              <div className="bg-[#fbf9f8] p-3.5 rounded-2xl border border-[#debfc2]/50 space-y-2">
+                <label className="block font-bold text-[#1c1b1b]">
+                  Customer WhatsApp Number (Recipient) *
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="bg-white border border-[#debfc2]/60 px-3 py-2 rounded-xl text-xs font-bold text-[#574144]">
+                    🇮🇳 +91
+                  </span>
+                  <input
+                    type="tel"
+                    required
+                    value={whatsAppTargetPhone}
+                    onChange={(e) => {
+                      setWhatsAppTargetPhone(e.target.value);
+                      setWhatsAppPhoneError('');
+                    }}
+                    placeholder="Customer 10-digit mobile number enter karein"
+                    className="flex-1 px-3 py-2 bg-white rounded-xl border border-[#debfc2]/60 focus:outline-none focus:border-emerald-600 font-medium text-xs text-[#1c1b1b]"
+                  />
+                </div>
+
+                {whatsAppTargetPhone.replace(/\D/g, '').endsWith('8238023498') ? (
+                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[11px] flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong>⚠️ Dhyan Dein:</strong> Yeh number aapka apna store number (82380 23498) hai! Kripya yahan customer ka actual WhatsApp mobile number likhein taaki message customer ke phone par jaye, aapke nahi.
+                    </div>
+                  </div>
+                ) : null}
+
+                {whatsAppPhoneError && (
+                  <p className="text-[11px] font-semibold text-rose-600 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{whatsAppPhoneError}</span>
+                  </p>
+                )}
+
+                <p className="text-[11px] text-[#8a7174]">
+                  💡 Customer ka mobile number likhkar send karne par yeh number is order mein permanently save ho jayega.
+                </p>
+              </div>
+
+              {/* Message Type Selector */}
+              <div>
+                <label className="block font-semibold text-[#574144] mb-1.5">Choose Message Template</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setWhatsAppMessageType('confirmation')}
+                    className={`p-2 rounded-xl border text-[11px] font-bold text-center transition-all cursor-pointer ${
+                      whatsAppMessageType === 'confirmation'
+                        ? 'bg-emerald-50 border-emerald-600 text-emerald-900'
+                        : 'bg-white border-[#debfc2]/60 text-[#574144] hover:bg-[#f6f3f2]'
+                    }`}
+                  >
+                    🎉 Order Confirmed
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWhatsAppMessageType('dispatch')}
+                    className={`p-2 rounded-xl border text-[11px] font-bold text-center transition-all cursor-pointer ${
+                      whatsAppMessageType === 'dispatch'
+                        ? 'bg-emerald-50 border-emerald-600 text-emerald-900'
+                        : 'bg-white border-[#debfc2]/60 text-[#574144] hover:bg-[#f6f3f2]'
+                    }`}
+                  >
+                    🚚 Dispatched & AWB
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWhatsAppMessageType('cod_pending')}
+                    className={`p-2 rounded-xl border text-[11px] font-bold text-center transition-all cursor-pointer ${
+                      whatsAppMessageType === 'cod_pending'
+                        ? 'bg-emerald-50 border-emerald-600 text-emerald-900'
+                        : 'bg-white border-[#debfc2]/60 text-[#574144] hover:bg-[#f6f3f2]'
+                    }`}
+                  >
+                    📦 COD Verification
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWhatsAppMessageType('custom')}
+                    className={`p-2 rounded-xl border text-[11px] font-bold text-center transition-all cursor-pointer ${
+                      whatsAppMessageType === 'custom'
+                        ? 'bg-emerald-50 border-emerald-600 text-emerald-900'
+                        : 'bg-white border-[#debfc2]/60 text-[#574144] hover:bg-[#f6f3f2]'
+                    }`}
+                  >
+                    ✍️ Custom Msg
+                  </button>
+                </div>
+              </div>
+
+              {/* Custom Message Field */}
+              {whatsAppMessageType === 'custom' && (
+                <div>
+                  <label className="block font-semibold text-[#574144] mb-1">Custom Message Text</label>
+                  <textarea
+                    rows={4}
+                    value={whatsAppCustomText}
+                    onChange={(e) => setWhatsAppCustomText(e.target.value)}
+                    placeholder="Customer ke liye custom message likhein..."
+                    className="w-full px-3 py-2 bg-white rounded-xl border border-[#debfc2]/60 focus:outline-none focus:border-emerald-600 text-xs text-[#1c1b1b]"
+                  />
+                </div>
+              )}
+
+              {/* Live Preview of WhatsApp Message */}
+              <div>
+                <label className="block font-semibold text-[#574144] mb-1">
+                  Message Preview (Customer ke WhatsApp par yeh message jayega):
+                </label>
+                <div className="bg-[#e7fce3] border border-emerald-200 p-3.5 rounded-2xl text-[11px] text-[#1c1b1b] whitespace-pre-wrap font-sans max-h-48 overflow-y-auto shadow-inner leading-relaxed">
+                  {getFormattedWhatsAppMessage(whatsAppModalOrder, whatsAppMessageType)}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-3 flex items-center justify-end gap-3 border-t border-[#debfc2]/40">
+                <button
+                  type="button"
+                  onClick={() => setWhatsAppModalOrder(null)}
+                  className="px-4 py-2 text-xs font-semibold text-[#8a7174] hover:text-[#1c1b1b] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-sm cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Open WhatsApp & Send to Customer</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Customer Contact Info Modal */}
+      {editingCustomerOrder && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl relative my-8 border border-[#debfc2]">
+            <div className="flex items-center justify-between pb-3 border-b border-[#debfc2]/40 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#fed9e2] text-[#6d0026] flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-base text-[#1c1b1b]">
+                    Edit Customer Details
+                  </h3>
+                  <p className="text-xs text-[#8a7174]">Order #{editingCustomerOrder.id}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingCustomerOrder(null)}
+                className="p-1.5 text-[#8a7174] hover:text-[#1c1b1b] rounded-full cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCustomerDetails} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-semibold text-[#574144] mb-1">Customer Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editCustomerForm.name}
+                  onChange={(e) => setEditCustomerForm({ ...editCustomerForm, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#f6f3f2] rounded-xl border border-[#debfc2]/60 focus:outline-none focus:border-[#6d0026]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-[#574144] mb-1">Customer Mobile / WhatsApp *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={editCustomerForm.phone}
+                    onChange={(e) => setEditCustomerForm({ ...editCustomerForm, phone: e.target.value })}
+                    placeholder="e.g. +91 98250 12345"
+                    className="w-full px-3 py-2 bg-[#f6f3f2] rounded-xl border border-[#debfc2]/60 focus:outline-none focus:border-[#6d0026]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-[#574144] mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    value={editCustomerForm.email}
+                    onChange={(e) => setEditCustomerForm({ ...editCustomerForm, email: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#f6f3f2] rounded-xl border border-[#debfc2]/60 focus:outline-none focus:border-[#6d0026]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#574144] mb-1">Delivery Address *</label>
+                <input
+                  type="text"
+                  required
+                  value={editCustomerForm.address}
+                  onChange={(e) => setEditCustomerForm({ ...editCustomerForm, address: e.target.value })}
+                  placeholder="House / Flat / Street / Area"
+                  className="w-full px-3 py-2 bg-[#f6f3f2] rounded-xl border border-[#debfc2]/60 focus:outline-none focus:border-[#6d0026]"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="block font-semibold text-[#574144] mb-1">City *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editCustomerForm.city}
+                    onChange={(e) => setEditCustomerForm({ ...editCustomerForm, city: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#f6f3f2] rounded-xl border border-[#debfc2]/60 focus:outline-none focus:border-[#6d0026]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-[#574144] mb-1">State *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editCustomerForm.state}
+                    onChange={(e) => setEditCustomerForm({ ...editCustomerForm, state: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#f6f3f2] rounded-xl border border-[#debfc2]/60 focus:outline-none focus:border-[#6d0026]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-[#574144] mb-1">Pincode *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editCustomerForm.pincode}
+                    onChange={(e) => setEditCustomerForm({ ...editCustomerForm, pincode: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#f6f3f2] rounded-xl border border-[#debfc2]/60 focus:outline-none focus:border-[#6d0026]"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-3 border-t border-[#debfc2]/40">
+                <button
+                  type="button"
+                  onClick={() => setEditingCustomerOrder(null)}
+                  className="px-4 py-2 text-xs font-semibold text-[#8a7174] hover:text-[#1c1b1b] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-[#6d0026] hover:bg-[#8e1b3b] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  Save Customer Details
                 </button>
               </div>
             </form>

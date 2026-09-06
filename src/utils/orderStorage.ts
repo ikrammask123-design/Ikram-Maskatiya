@@ -10,7 +10,7 @@ export const INITIAL_ORDERS: StoreOrder[] = [
     customer: {
       name: 'Customer (Order ZV-774802)',
       email: 'customer.zv774802@gmail.com',
-      phone: '+91 82380 23498',
+      phone: '+91 98250 00000',
       address: 'Direct Storefront Checkout - Placed via Shared Link',
       city: 'Surat',
       state: 'Gujarat',
@@ -35,11 +35,10 @@ export const INITIAL_ORDERS: StoreOrder[] = [
     giftWrapAmount: 0,
     total: 2159,
     currency: 'INR',
-    paymentMethod: 'upi',
-    paymentStatus: 'paid',
+    paymentMethod: 'cod',
+    paymentStatus: 'pending',
     fulfillmentStatus: 'new',
-    transactionId: 'UPI/774802918231@ybl',
-    adminNotes: '⚡ REAL STORE ORDER ZV-774802: Placed via storefront by customer. Synced to central database.',
+    adminNotes: 'COD Order: Collect ₹2,159 cash on delivery. Placed via storefront by customer.',
   },
 ];
 
@@ -330,6 +329,35 @@ export function updateOrderDetails(orderId: string, updates: Partial<StoreOrder>
     console.error('Failed to update order details', e);
     return getStoredOrders();
   }
+}
+
+export function updateOrderCustomer(orderId: string, customerUpdates: Partial<StoreOrder['customer']>): StoreOrder[] {
+  try {
+    const existing = getStoredOrders();
+    const target = existing.find((o) => o.id === orderId);
+    if (!target) return existing;
+
+    const mergedCustomer = {
+      ...target.customer,
+      ...customerUpdates,
+    };
+
+    return updateOrderDetails(orderId, { customer: mergedCustomer });
+  } catch (e) {
+    console.error('Failed to update order customer', e);
+    return getStoredOrders();
+  }
+}
+
+export function formatWhatsAppPhone(phone: string): string {
+  let clean = phone.replace(/\D/g, '');
+  // Strip any leading zeros
+  clean = clean.replace(/^0+/, '');
+  // If 10 digits, prefix Indian international dialing code 91
+  if (clean.length === 10) {
+    clean = `91${clean}`;
+  }
+  return clean;
 }
 
 export function deleteStoredOrder(orderId: string): StoreOrder[] {

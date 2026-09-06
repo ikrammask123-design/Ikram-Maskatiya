@@ -18,12 +18,13 @@ import {
   MessageCircle,
   ExternalLink,
   Lock,
+  AlertCircle,
 } from 'lucide-react';
 import { CartItem, Currency, StoreOrder, PaymentStatus } from '../types';
 import { formatPrice } from './ProductCard';
 import { CURRENCY_RATES } from '../data/products';
 import { Logo } from './Logo';
-import { saveOrderToStoreAsync } from '../utils/orderStorage';
+import { saveOrderToStoreAsync, formatWhatsAppPhone } from '../utils/orderStorage';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -53,19 +54,30 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const [giftWrap, setGiftWrap] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<'cart' | 'checkout' | 'success'>('cart');
 
-  // Checkout Form State
-  const [shippingInfo, setShippingInfo] = useState({
-    name: 'Ananya Sharma',
-    email: 'ananya.sharma@example.com',
-    phone: '+91 98765 43210',
-    address: '42, Gulmohar Enclave, Malabar Hill',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    pincode: '400006',
-    country: 'India',
+  // Checkout Form State: initialized empty or from customer's previous checkout
+  const [shippingInfo, setShippingInfo] = useState(() => {
+    try {
+      const saved = localStorage.getItem('zevioza_customer_shipping');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && parsed.name) return parsed;
+      }
+    } catch {}
+    return {
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      state: 'Gujarat',
+      pincode: '',
+      country: 'India',
+    };
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'upi' | 'cod'>('razorpay');
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'upi' | 'razorpay'>('cod');
+  const [upiUtr, setUpiUtr] = useState('');
+  const [checkoutError, setCheckoutError] = useState('');
   const [selectedUpiApp, setSelectedUpiApp] = useState<'gpay' | 'phonepe' | 'paytm' | 'qr'>('gpay');
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -98,13 +110,47 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     setTimeout(() => setCopiedUpi(false), 2500);
   };
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsProcessingPayment(true);
+    setCheckoutError('');
 
+    // Strict validation: Delivery address fields cannot be blank
+    if (!shippingInfo.name.trim()) {
+      setCheckoutError('Please enter recipient full name');
+      return;
+    }
+    const cleanPhone = shippingInfo.phone.replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setCheckoutError('Please enter a valid 10-digit mobile number for dispatch updates');
+      return;
+    }
+    if (!shippingInfo.address.trim()) {
+      setCheckoutError('Please enter complete delivery street address');
+      return;
+    }
+    if (!shippingInfo.city.trim()) {
+      setCheckoutError('Please enter city name');
+      return;
+    }
+    if (!shippingInfo.pincode.trim() || shippingInfo.pincode.length < 5) {
+      setCheckoutError('Please enter a valid delivery postal pincode');
+      return;
+    }
+
+    // Save shipping info for future checkout convenience
+    try {
+      localStorage.setItem('zevioza_customer_shipping', JSON.stringify(shippingInfo));
+    } catch {}
+
+    setIsProcessingPayment(true);
     const newId = `ZV-${Math.floor(100000 + Math.random() * 900000)}`;
 
-    const recordOrder = async (id: string, status: PaymentStatus = paymentMethod === 'cod' ? 'pending' : 'paid', txn?: string) => {
+    const recordOrder = async (
+      id: string,
+      status: PaymentStatus,
+      txn?: string,
+      customAdminNotes?: string
+    ) => {
       const storeOrder: StoreOrder = {
         id,
         createdAt: new Date().toISOString(),
@@ -127,74 +173,107 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         total: grandTotal,
         currency,
         paymentMethod,
-        paymentStatus: status,
+        paymentStatus: status, // STRICT: Only 'paid' when verified by gateway or money is physically collected
         fulfillmentStatus: 'new',
-        transactionId: txn || (paymentMethod === 'upi' ? `UPI/${Date.now().toString().slice(-8)}@ok` : paymentMethod === 'razorpay' ? `pay_${Date.now().toString().slice(-10)}` : undefined),
-        adminNotes: paymentMethod === 'cod' ? `COD Order: Collect ₹${grandTotal} on delivery.` : 'Prepaid Order processed via checkout.',
+        transactionId: txn,
+        adminNotes:
+          customAdminNotes ||
+          (paymentMethod === 'cod'
+            ? `COD Order: Collect ₹${grandTotal} cash upon delivery.`
+            : paymentMethod === 'upi'
+            ? upiUtr.trim()
+              ? `UPI Order (Customer UTR: ${upiUtr.trim()}). Verify ₹${grandTotal} in bank before dispatch.`
+              : `UPI Order placed. Verification required before dispatch.`
+            : 'Online Order via Gateway.'),
         isDemo: false,
       };
       await saveOrderToStoreAsync(storeOrder);
     };
 
-    // If Razorpay is selected and SDK is available
-    if (paymentMethod === 'razorpay' && typeof (window as any).Razorpay !== 'undefined') {
-      const options = {
-        key: 'rzp_test_placeholder', // Replaced with user's real/test key ID
-        amount: grandTotal * 100, // Amount in subunits (paise)
-        currency: currency === 'INR' ? 'INR' : currency,
-        name: 'Zevioza Boutique',
-        description: `Boutique Order - ${newId}`,
-        image: '/logo.svg',
-        handler: async function (response: any) {
-          setIsProcessingPayment(false);
-          setOrderId(newId);
-          await recordOrder(newId, 'paid', response?.razorpay_payment_id || `pay_${Date.now().toString().slice(-10)}`);
-          setCheckoutStep('success');
-        },
-        prefill: {
-          name: shippingInfo.name,
-          email: shippingInfo.email,
-          contact: shippingInfo.phone,
-        },
-        theme: {
-          color: '#6d0026',
-        },
-        modal: {
-          ondismiss: function () {
-            setIsProcessingPayment(false);
+    if (paymentMethod === 'cod') {
+      // CASH ON DELIVERY: Payment is strictly PENDING until delivered and cash is collected
+      setOrderId(newId);
+      await recordOrder(
+        newId,
+        'pending',
+        undefined,
+        `COD Order: Collect ₹${grandTotal} cash on delivery from customer.`
+      );
+      setIsProcessingPayment(false);
+      setCheckoutStep('success');
+    } else if (paymentMethod === 'upi') {
+      // DIRECT UPI / QR: Customer pays to UPI ID. Payment is strictly PENDING verification
+      setOrderId(newId);
+      const cleanUtr = upiUtr.trim();
+      await recordOrder(
+        newId,
+        'pending',
+        cleanUtr ? `UTR: ${cleanUtr}` : undefined,
+        cleanUtr
+          ? `UPI Payment submitted. Customer UTR: ${cleanUtr}. Check SBI YONO / Bank SMS for ₹${grandTotal} before shipping.`
+          : `UPI Payment selected (no UTR provided). Payment verification required before dispatch.`
+      );
+      setIsProcessingPayment(false);
+      setCheckoutStep('success');
+    } else if (paymentMethod === 'razorpay') {
+      // RAZORPAY GATEWAY: Only mark paid if real payment ID is returned
+      if (typeof (window as any).Razorpay !== 'undefined') {
+        const options = {
+          key: 'rzp_test_placeholder',
+          amount: grandTotal * 100,
+          currency: currency === 'INR' ? 'INR' : currency,
+          name: 'Zevioza Boutique',
+          description: `Boutique Order - ${newId}`,
+          image: '/logo.svg',
+          handler: async function (response: any) {
+            if (response?.razorpay_payment_id) {
+              setOrderId(newId);
+              await recordOrder(
+                newId,
+                'paid',
+                response.razorpay_payment_id,
+                `Verified Online Payment via Razorpay ID: ${response.razorpay_payment_id}`
+              );
+              setIsProcessingPayment(false);
+              setCheckoutStep('success');
+            } else {
+              setIsProcessingPayment(false);
+              setCheckoutError('Payment was not verified by gateway. Please choose UPI or Cash on Delivery.');
+            }
           },
-        },
-      };
+          prefill: {
+            name: shippingInfo.name,
+            email: shippingInfo.email,
+            contact: shippingInfo.phone,
+          },
+          theme: {
+            color: '#6d0026',
+          },
+          modal: {
+            ondismiss: function () {
+              setIsProcessingPayment(false);
+              setCheckoutError('Payment cancelled. You can complete your order using Cash on Delivery (COD) or Instant UPI.');
+            },
+          },
+        };
 
-      try {
-        const rzp = new (window as any).Razorpay(options);
-        rzp.on('payment.failed', function () {
+        try {
+          const rzp = new (window as any).Razorpay(options);
+          rzp.on('payment.failed', function (err: any) {
+            setIsProcessingPayment(false);
+            setCheckoutError(
+              `Payment failed: ${err?.error?.description || 'Gateway transaction declined'}. Please try Cash on Delivery or UPI.`
+            );
+          });
+          rzp.open();
+        } catch {
           setIsProcessingPayment(false);
-        });
-        rzp.open();
-        // Fallback simulation in sandbox/test if dummy key
-        setTimeout(async () => {
-          setOrderId(newId);
-          await recordOrder(newId, 'paid');
-          setIsProcessingPayment(false);
-          setCheckoutStep('success');
-        }, 1200);
-      } catch {
-        setTimeout(async () => {
-          setOrderId(newId);
-          await recordOrder(newId, 'paid');
-          setIsProcessingPayment(false);
-          setCheckoutStep('success');
-        }, 1200);
-      }
-    } else {
-      // Direct UPI or COD flow
-      (async () => {
-        setOrderId(newId);
-        await recordOrder(newId, paymentMethod === 'cod' ? 'pending' : 'paid');
+          setCheckoutError('Online gateway is not active for live transactions. Please choose Cash on Delivery (COD) or Instant UPI.');
+        }
+      } else {
         setIsProcessingPayment(false);
-        setCheckoutStep('success');
-      })();
+        setCheckoutError('Payment gateway unavailable. Please choose Cash on Delivery (COD) or Instant UPI.');
+      }
     }
   };
 
@@ -214,6 +293,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
     const trackingNotice = orderId ? `*Order ID:* ${orderId}\n` : '';
 
+    const paymentStatusNotice =
+      paymentMethod === 'cod'
+        ? `*Payment Status:* ⏳ Cash to be collected at doorstep (₹${grandTotal})\n`
+        : paymentMethod === 'upi'
+        ? `*Payment Status:* 🔍 UPI Verification Required${upiUtr.trim() ? ` (UTR: ${upiUtr.trim()})` : ''}\n`
+        : '*Payment Status:* ✅ Paid Online via Gateway\n';
+
     const message = encodeURIComponent(
       `🛍️ *New Order Confirmation - Zevioza Boutique*\n\n` +
         trackingNotice +
@@ -232,10 +318,53 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
             : paymentMethod === 'upi'
             ? `UPI (${selectedUpiApp.toUpperCase()})`
             : 'Cash on Delivery (COD)'
-        }\n\nPlease confirm availability and dispatch schedule!`
+        }\n` +
+        paymentStatusNotice +
+        `\nPlease confirm order acceptance and dispatch schedule!`
     );
 
     window.open(`https://wa.me/918238023498?text=${message}`, '_blank');
+  };
+
+  const handleSendToCustomerWhatsApp = () => {
+    const raw = shippingInfo.phone.trim();
+    const cleanPhone = formatWhatsAppPhone(raw);
+    if (!cleanPhone || cleanPhone.length < 10) {
+      handleWhatsAppOrder();
+      return;
+    }
+
+    const itemsList = items
+      .map(
+        (i) =>
+          `• ${i.product.name} (Qty: ${i.quantity}${
+            i.selectedColor ? `, Shade: ${i.selectedColor}` : ''
+          }${i.selectedSize ? `, Size: ${i.selectedSize}` : ''}) - ₹${
+            (i.product.price + (i.customStitching ? 2500 : 0)) * i.quantity
+          }`
+      )
+      .join('\n');
+
+    const paymentText =
+      paymentMethod === 'cod'
+        ? `Cash on Delivery (₹${grandTotal} to collect on delivery)`
+        : paymentMethod === 'upi'
+        ? 'Direct UPI'
+        : 'Prepaid Online';
+
+    const msg = encodeURIComponent(
+      `Namaste ${shippingInfo.name} ji,\n\n` +
+        `Aapka Zevioza Boutique Order *#${orderId}* successfully place ho gaya hai! 🎉\n\n` +
+        `• *Total Amount:* ₹${grandTotal}\n` +
+        `• *Payment Mode:* ${paymentText}\n` +
+        `• *Payment Status:* ${paymentMethod === 'cod' ? 'PENDING ⏳ (Pay at delivery)' : 'PENDING VERIFICATION / PREPAID'}\n` +
+        `• *Delivery Address:* ${shippingInfo.address}, ${shippingInfo.city} - ${shippingInfo.pincode}\n\n` +
+        `*Items Ordered:*\n${itemsList}\n\n` +
+        `Track your order anytime at: ${window.location.origin}\n\n` +
+        `Thank you for shopping with Zevioza Boutique!`
+    );
+
+    window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
   };
 
   const handleFinishSuccess = () => {
@@ -432,6 +561,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
           {checkoutStep === 'checkout' && (
             <form id="checkout-form" onSubmit={handlePlaceOrder} className="flex flex-col gap-4">
+              {/* Checkout Alert / Error Notification */}
+              {checkoutError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-start gap-2 animate-shake">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
+                  <span className="leading-snug">{checkoutError}</span>
+                </div>
+              )}
+
               {/* Step 1: Shipping Address */}
               <div className="p-3 bg-white rounded-xl border border-[#debfc2]/30">
                 <span className="text-xs font-semibold text-[#6d0026] uppercase tracking-wider block mb-3">
@@ -656,6 +793,25 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                               </>
                             )}
                           </button>
+
+                          {/* Customer UTR / Transaction Input */}
+                          <div className="w-full mt-3 pt-2.5 border-t border-[#debfc2]/40 text-left">
+                            <label className="text-[10px] font-bold text-[#6d0026] block mb-1">
+                              UPI UTR / Ref Number (Enter after making payment):
+                            </label>
+                            <input
+                              type="text"
+                              maxLength={24}
+                              placeholder="e.g. 428190382910 (12 digits)"
+                              value={upiUtr}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => setUpiUtr(e.target.value)}
+                              className="w-full text-xs p-2 bg-[#f6f3f2] rounded-lg border border-[#debfc2]/70 focus:outline-none focus:border-[#6d0026] font-mono"
+                            />
+                            <p className="text-[9px] text-[#8a7174] mt-1 leading-snug">
+                              * Store admin will verify payment in bank account using this UTR before packing your order.
+                            </p>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -765,9 +921,25 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     {paymentMethod === 'razorpay'
                       ? 'Razorpay (Online Payment)'
                       : paymentMethod === 'upi'
-                      ? `UPI (${selectedUpiApp.toUpperCase()})`
+                      ? `Instant UPI (${selectedUpiApp.toUpperCase()})`
                       : 'Cash on Delivery (COD)'}
                   </span>
+                </div>
+                <div className="flex items-center justify-between text-[#574144]">
+                  <span>Payment Status:</span>
+                  {paymentMethod === 'cod' ? (
+                    <span className="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded">
+                      PENDING • Pay {formatPrice(grandTotal, currency)} at Doorstep
+                    </span>
+                  ) : paymentMethod === 'upi' ? (
+                    <span className="text-[10px] font-bold bg-blue-100 text-blue-900 px-2 py-0.5 rounded">
+                      PENDING • Store Verification Required
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded">
+                      PAID • Verified by Gateway
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center justify-between text-[#574144]">
                   <span>Delivery Address:</span>
@@ -809,14 +981,26 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </button>
               )}
 
-              {/* WhatsApp Updates Action */}
+              {/* WhatsApp Receipt to Customer */}
+              {shippingInfo.phone && (
+                <button
+                  type="button"
+                  onClick={handleSendToCustomerWhatsApp}
+                  className="w-full mb-2.5 bg-emerald-700 hover:bg-emerald-800 text-white py-3 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Send Receipt to Customer WhatsApp ({shippingInfo.phone})</span>
+                </button>
+              )}
+
+              {/* Chat with Boutique Support */}
               <button
                 type="button"
                 onClick={handleWhatsAppOrder}
-                className="w-full mb-3 bg-emerald-700 hover:bg-emerald-800 text-white py-3 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                className="w-full mb-3 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
               >
-                <MessageCircle className="w-4 h-4" />
-                <span>Receive Updates on WhatsApp</span>
+                <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Contact Boutique Helpdesk (82380 23498)</span>
               </button>
 
               <button
@@ -886,11 +1070,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   {isProcessingPayment ? (
                     <span>Processing Payment...</span>
                   ) : paymentMethod === 'cod' ? (
-                    <span>CONFIRM COD ORDER ({formatPrice(grandTotal, currency)})</span>
+                    <span>CONFIRM CASH ON DELIVERY ({formatPrice(grandTotal, currency)})</span>
                   ) : paymentMethod === 'upi' ? (
-                    <span>PAY VIA UPI {formatPrice(grandTotal, currency)}</span>
+                    <span>SUBMIT UPI ORDER ({formatPrice(grandTotal, currency)})</span>
                   ) : (
-                    <span>PAY VIA RAZORPAY {formatPrice(grandTotal, currency)}</span>
+                    <span>PAY VIA RAZORPAY ({formatPrice(grandTotal, currency)})</span>
                   )}
                 </button>
               </div>

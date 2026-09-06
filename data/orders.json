@@ -4,9 +4,9 @@
     "createdAt": "2026-09-06T12:15:00.000Z",
     "isDemo": false,
     "customer": {
-      "name": "Friend / Real Customer (Order ZV-774802)",
+      "name": "Customer (Order ZV-774802)",
       "email": "customer.zv774802@gmail.com",
-      "phone": "+91 82380 23498",
+      "phone": "+91 98250 00000",
       "address": "Direct Storefront Checkout - Placed via Shared Link",
       "city": "Surat",
       "state": "Gujarat",
@@ -31,10 +31,10 @@
     "giftWrapAmount": 0,
     "total": 2159,
     "currency": "INR",
-    "paymentMethod": "upi",
-    "paymentStatus": "paid",
+    "paymentMethod": "cod",
+    "paymentStatus": "pending",
     "fulfillmentStatus": "new",
-    "transactionId": "UPI/774802918231@ybl",
-    "adminNotes": "⚡ REAL STORE ORDER ZV-774802: Placed via storefront by customer/friend. Synced to centralized merchant database."
+    "adminNotes": "COD Order: Collect ₹2,159 cash on delivery. Placed via storefront by customer.",
+    "transactionId": "MANUAL-1788699500118"
   }
 ]
