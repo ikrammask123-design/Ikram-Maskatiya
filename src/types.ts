@@ -113,6 +113,12 @@ export interface StoreOrder {
   adminNotes?: string;
   trackingNumber?: string;
   courierPartner?: string;
+  shiprocketOrderId?: number | string;
+  shiprocketShipmentId?: number | string;
+  shiprocketAwb?: string;
+  shiprocketCourier?: string;
+  shiprocketTrackingUrl?: string;
+  shiprocketStatus?: string;
   isDemo?: boolean;
 }
 
@@ -133,6 +139,8 @@ export interface UserAccount {
   name: string;
   phone: string;
   email?: string;
+  photoURL?: string;
+  authProvider?: 'google' | 'password' | 'phone';
   addresses: UserAddress[];
   savedMeasurements?: {
     bust?: string;

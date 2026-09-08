@@ -47,6 +47,27 @@ export const TrackOrderModal: React.FC<TrackOrderModalProps> = ({
   const [copiedTracking, setCopiedTracking] = useState(false);
   const [recentOrderId, setRecentOrderId] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [liveShiprocketData, setLiveShiprocketData] = useState<any>(null);
+  const [isLoadingLiveTracking, setIsLoadingLiveTracking] = useState(false);
+
+  // Fetch live Shiprocket tracking data whenever active order has an AWB
+  useEffect(() => {
+    const awb = searchedOrder?.shiprocketAwb || searchedOrder?.trackingNumber;
+    if (awb) {
+      setIsLoadingLiveTracking(true);
+      fetch(`/api/shiprocket/track/${encodeURIComponent(awb.trim())}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.liveData) {
+            setLiveShiprocketData(data.liveData);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setIsLoadingLiveTracking(false));
+    } else {
+      setLiveShiprocketData(null);
+    }
+  }, [searchedOrder?.id, searchedOrder?.trackingNumber, searchedOrder?.shiprocketAwb]);
 
   // Initialize or pre-populate if initialOrderId or recent order is present
   useEffect(() => {
@@ -329,8 +350,8 @@ export const TrackOrderModal: React.FC<TrackOrderModalProps> = ({
                         {step > 1 ? <Check className="w-4 h-4" /> : '1'}
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-[#1c1b1b]">Order Confirmed</div>
-                        <div className="text-[10px] text-[#8a7174]">Payment verified</div>
+                        <div className="text-xs font-bold text-[#1c1b1b]">Order Placed</div>
+                        <div className="text-[10px] text-[#8a7174]">Confirmed & logged</div>
                       </div>
                     </div>
 
@@ -346,8 +367,8 @@ export const TrackOrderModal: React.FC<TrackOrderModalProps> = ({
                         {step > 2 ? <Check className="w-4 h-4" /> : '2'}
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-[#1c1b1b]">Atelier Tailoring</div>
-                        <div className="text-[10px] text-[#8a7174]">Silk mark & quality checked</div>
+                        <div className="text-xs font-bold text-[#1c1b1b]">Picked Up</div>
+                        <div className="text-[10px] text-[#8a7174]">Surat Boutique Hub</div>
                       </div>
                     </div>
 
@@ -363,8 +384,8 @@ export const TrackOrderModal: React.FC<TrackOrderModalProps> = ({
                         {step > 3 ? <Check className="w-4 h-4" /> : '3'}
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-[#1c1b1b]">Dispatched (Transit)</div>
-                        <div className="text-[10px] text-[#8a7174]">Handed to courier</div>
+                        <div className="text-xs font-bold text-[#1c1b1b]">In Transit</div>
+                        <div className="text-[10px] text-[#8a7174]">Via Shiprocket Partner</div>
                       </div>
                     </div>
 
@@ -380,39 +401,49 @@ export const TrackOrderModal: React.FC<TrackOrderModalProps> = ({
                         {step === 4 ? <Check className="w-4 h-4" /> : '4'}
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-[#1c1b1b]">Delivered</div>
-                        <div className="text-[10px] text-[#8a7174]">Received at doorstep</div>
+                        <div className="text-xs font-bold text-[#1c1b1b]">Out for Delivery</div>
+                        <div className="text-[10px] text-[#8a7174]">Doorstep inspection</div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Courier Partner & AWB Card */}
-                {searchedOrder.courierPartner && (
+                {/* Courier Partner & Shiprocket Live Tracking Card */}
+                {(searchedOrder.courierPartner || searchedOrder.trackingNumber || searchedOrder.shiprocketAwb) && (
                   <div className="mt-6 bg-[#fcf9f8] p-4 rounded-xl border border-[#debfc2]/50 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-lg bg-[#fed9e2] text-[#6d0026] flex items-center justify-center shrink-0">
                         <Truck className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-[10px] uppercase font-bold text-[#8a7174] tracking-wider">
-                          Logistics Partner
+                        <div className="text-[10px] uppercase font-bold text-[#8a7174] tracking-wider flex items-center gap-1.5">
+                          <span>Logistics Partner</span>
+                          {searchedOrder.shiprocketAwb && (
+                            <span className="bg-[#6d0026] text-white text-[9px] px-1.5 py-0.2 rounded font-bold">
+                              SHIPROCKET
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs font-bold text-[#1c1b1b]">
-                          {searchedOrder.courierPartner}
+                          {searchedOrder.courierPartner || searchedOrder.shiprocketCourier || 'Shiprocket Express'}
                         </div>
+                        {liveShiprocketData?.current_status && (
+                          <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                            Live Status: {liveShiprocketData.current_status}
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    {searchedOrder.trackingNumber ? (
-                      <div className="flex items-center gap-2">
+                    {(searchedOrder.trackingNumber || searchedOrder.shiprocketAwb) ? (
+                      <div className="flex items-center gap-2 flex-wrap">
                         <div className="bg-white px-3 py-1.5 rounded-lg border border-[#debfc2]/60 text-xs font-mono font-bold text-[#1c1b1b]">
-                          AWB: {searchedOrder.trackingNumber}
+                          AWB: {searchedOrder.shiprocketAwb || searchedOrder.trackingNumber}
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleCopyTracking(searchedOrder.trackingNumber || '')}
-                          className="p-2 bg-white hover:bg-[#fed9e2]/30 text-[#6d0026] border border-[#debfc2] rounded-lg transition-colors"
+                          onClick={() => handleCopyTracking(searchedOrder.shiprocketAwb || searchedOrder.trackingNumber || '')}
+                          className="p-2 bg-white hover:bg-[#fed9e2]/30 text-[#6d0026] border border-[#debfc2] rounded-lg transition-colors cursor-pointer"
                           title="Copy AWB Number"
                         >
                           {copiedTracking ? (
@@ -421,6 +452,18 @@ export const TrackOrderModal: React.FC<TrackOrderModalProps> = ({
                             <Copy className="w-4 h-4" />
                           )}
                         </button>
+                        <a
+                          href={
+                            searchedOrder.shiprocketTrackingUrl ||
+                            `https://shiprocket.co/tracking/${searchedOrder.shiprocketAwb || searchedOrder.trackingNumber}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 bg-[#6d0026] hover:bg-[#8e1b3b] text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-2xs transition-colors"
+                        >
+                          <span>Track Live</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
                       </div>
                     ) : (
                       <span className="text-xs text-[#8a7174] italic">

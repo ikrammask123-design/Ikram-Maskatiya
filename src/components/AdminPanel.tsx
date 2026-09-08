@@ -59,6 +59,7 @@ import {
   saveOrderToStore,
   clearAllDemoOrders,
   clearAllOrders,
+  shipOrderWithShiprocket,
   getAdminPin,
   setAdminPin,
   verifyAdminPin,
@@ -99,6 +100,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
   const [statusFilter, setStatusFilter] = useState<string>('all'); // all, paid, pending, new, shipped, delivered
   const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState<StoreOrder | null>(null);
   const [editingTrackingId, setEditingTrackingId] = useState<string | null>(null);
+  const [shippingOrderId, setShippingOrderId] = useState<string | null>(null);
   const [trackingInput, setTrackingInput] = useState({ courier: '', trackingNumber: '' });
   const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false);
   const [isAdVideoModalOpen, setIsAdVideoModalOpen] = useState(false);
@@ -322,6 +324,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
     setOrders(updated);
     setEditingTrackingId(null);
     showToast(`Tracking saved & marked as Shipped for #${orderId}`);
+  };
+
+  const handleShipWithShiprocket = async (order: StoreOrder) => {
+    setShippingOrderId(order.id);
+    try {
+      const res = await shipOrderWithShiprocket(order);
+      if (res.success && res.awb_code) {
+        loadOrders();
+        if (res.walletNotice) {
+          showToast(`AWB ${res.awb_code} generated (${res.courier_name}). Notice: Recharge wallet on shiprocket.in for live courier pickup manifest.`);
+        } else {
+          showToast(`Order Shipped! Shiprocket AWB ${res.awb_code} assigned via ${res.courier_name}!`);
+        }
+      } else {
+        showToast(res.error || 'Could not assign Shiprocket AWB');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error communicating with Shiprocket');
+    } finally {
+      setShippingOrderId(null);
+    }
   };
 
   const handleDeleteOrder = (orderId: string) => {
@@ -1352,32 +1375,77 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                             </button>
                           </div>
                         ) : (
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Truck className="w-4 h-4 text-[#6d0026]" />
-                              {order.trackingNumber ? (
-                                <span className="font-medium text-[#1c1b1b]">
-                                  {order.courierPartner || 'Courier'}:{' '}
-                                  <span className="font-mono font-bold text-[#6d0026]">
-                                    {order.trackingNumber}
-                                  </span>
-                                </span>
-                              ) : (
-                                <span className="text-[#8a7174] italic">No tracking assigned yet</span>
-                              )}
+                          <div className="space-y-2.5">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div className="flex items-center gap-2">
+                                <Truck className="w-4 h-4 text-[#6d0026]" />
+                                {order.trackingNumber ? (
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-semibold text-[#1c1b1b]">
+                                      {order.courierPartner || order.shiprocketCourier || 'Shiprocket Express'}:
+                                    </span>
+                                    <span className="font-mono font-bold text-[#6d0026] bg-[#fed9e2]/40 px-2 py-0.5 rounded-md">
+                                      {order.trackingNumber}
+                                    </span>
+                                    {order.shiprocketTrackingUrl && (
+                                      <a
+                                        href={order.shiprocketTrackingUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-[11px] text-[#6d0026] hover:underline font-bold ml-1 bg-white border border-[#debfc2] px-2 py-0.5 rounded-md shadow-2xs"
+                                      >
+                                        <span>Track Live</span>
+                                        <ExternalLink className="w-3 h-3" />
+                                      </a>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-[#8a7174] italic">Shipment not dispatched yet</span>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setEditingTrackingId(order.id);
+                                  setTrackingInput({
+                                    courier: order.courierPartner || '',
+                                    trackingNumber: order.trackingNumber || '',
+                                  });
+                                }}
+                                className="text-[11px] font-semibold text-[#8a7174] hover:text-[#1c1b1b] underline"
+                              >
+                                {order.trackingNumber ? 'Manual Edit' : '+ Manual AWB'}
+                              </button>
                             </div>
-                            <button
-                              onClick={() => {
-                                setEditingTrackingId(order.id);
-                                setTrackingInput({
-                                  courier: order.courierPartner || '',
-                                  trackingNumber: order.trackingNumber || '',
-                                });
-                              }}
-                              className="text-xs font-semibold text-[#6d0026] hover:underline"
-                            >
-                              {order.trackingNumber ? 'Edit Tracking' : '+ Add Courier & AWB'}
-                            </button>
+
+                            {/* Prominent Shiprocket 'Ship Order / Fetch AWB' Button */}
+                            <div className="pt-1">
+                              <button
+                                id={`btn-shiprocket-dispatch-${order.id}`}
+                                onClick={() => handleShipWithShiprocket(order)}
+                                disabled={shippingOrderId === order.id}
+                                className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs ${
+                                  order.trackingNumber
+                                    ? 'bg-white border-2 border-[#6d0026] text-[#6d0026] hover:bg-[#fed9e2]/20'
+                                    : 'bg-[#6d0026] hover:bg-[#8e1b3b] text-white'
+                                } disabled:opacity-50`}
+                              >
+                                {shippingOrderId === order.id ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                    <span>Contacting Shiprocket API & Assigning Courier...</span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <Truck className="w-4 h-4" />
+                                    <span>
+                                      {order.trackingNumber
+                                        ? '🔄 Re-fetch / Update AWB (Shiprocket)'
+                                        : '🚚 Ship Order / Fetch AWB (Shiprocket)'}
+                                    </span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>

@@ -12,6 +12,10 @@ service cloud.firestore {
       allow delete: if true;
     }
 
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
     match /admin_settings/{settingId} {
       allow read, write: if true;
     }

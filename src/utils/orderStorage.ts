@@ -320,6 +320,120 @@ export async function saveOrderToStoreAsync(order: StoreOrder): Promise<void> {
       body: JSON.stringify(cleanForFirestore(orderWithFlag)),
     }).catch(() => {});
   } catch {}
+
+  // 4. Automatically create shipment request on Shiprocket
+  try {
+    fetch('/api/shiprocket/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: orderWithFlag }),
+    })
+      .then((res) => res.json())
+      .then((srData) => {
+        if (srData.success && srData.shipment_id) {
+          console.log(`[Shiprocket Sync] Shipment registered: ID ${srData.shipment_id}`);
+          // Update Firestore
+          setDoc(
+            doc(db, 'orders', order.id),
+            cleanForFirestore({
+              shiprocketOrderId: srData.order_id,
+              shiprocketShipmentId: srData.shipment_id,
+              shiprocketStatus: srData.status || 'NEW',
+            }),
+            { merge: true }
+          ).catch(() => {});
+
+          // Update local cache
+          const curr = getStoredOrders();
+          const updated = curr.map((o) =>
+            o.id === order.id
+              ? {
+                  ...o,
+                  shiprocketOrderId: srData.order_id,
+                  shiprocketShipmentId: srData.shipment_id,
+                  shiprocketStatus: srData.status || 'NEW',
+                }
+              : o
+          );
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+          window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
+        }
+      })
+      .catch((err) => console.warn('[Shiprocket] Auto-create order background notice:', err));
+  } catch {}
+}
+
+/**
+ * Assign courier and generate AWB tracking code on Shiprocket for an order
+ */
+export async function shipOrderWithShiprocket(order: StoreOrder): Promise<{
+  success: boolean;
+  awb_code?: string;
+  courier_name?: string;
+  tracking_url?: string;
+  error?: string;
+  walletNotice?: string;
+}> {
+  try {
+    const res = await fetch('/api/shiprocket/assign-awb', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order }),
+    });
+
+    const data = await res.json();
+    if (data.success && data.awb_code) {
+      // 1. Update local storage
+      const existing = getStoredOrders();
+      const updated = existing.map((o) =>
+        o.id === order.id
+          ? {
+              ...o,
+              fulfillmentStatus: 'shipped' as const,
+              trackingNumber: data.awb_code,
+              courierPartner: data.courier_name,
+              shiprocketAwb: data.awb_code,
+              shiprocketCourier: data.courier_name,
+              shiprocketTrackingUrl: data.tracking_url,
+              shiprocketShipmentId: data.shipment_id || o.shiprocketShipmentId,
+            }
+          : o
+      );
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
+
+      // 2. Commit updates to live Firestore
+      try {
+        await setDoc(
+          doc(db, 'orders', order.id),
+          cleanForFirestore({
+            fulfillmentStatus: 'shipped',
+            trackingNumber: data.awb_code,
+            courierPartner: data.courier_name,
+            shiprocketAwb: data.awb_code,
+            shiprocketCourier: data.courier_name,
+            shiprocketTrackingUrl: data.tracking_url,
+            shiprocketShipmentId: data.shipment_id || order.shiprocketShipmentId,
+          }),
+          { merge: true }
+        );
+      } catch (err) {
+        console.warn('Firestore update error on ship order:', err);
+      }
+
+      return {
+        success: true,
+        awb_code: data.awb_code,
+        courier_name: data.courier_name,
+        tracking_url: data.tracking_url,
+        walletNotice: data.walletNotice,
+      };
+    }
+
+    return { success: false, error: data.error || 'Failed to assign Shiprocket courier' };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
 }
 
 export function saveOrderToStore(order: StoreOrder): void {

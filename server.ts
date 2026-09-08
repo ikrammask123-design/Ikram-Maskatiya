@@ -2,6 +2,12 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
+import {
+  getShiprocketToken,
+  createShiprocketOrder,
+  assignCourierAndAwb,
+  trackShipment,
+} from './server/shiprocket';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
@@ -194,6 +200,108 @@ async function startServer() {
       res.json({ success: true, order: found });
     } else {
       res.status(404).json({ success: false, error: 'Order not found' });
+    }
+  });
+
+  // ================= SHIPROCKET API ROUTES =================
+
+  // GET /api/shiprocket/status - Check connection and token
+  app.get('/api/shiprocket/status', async (req, res) => {
+    try {
+      const token = await getShiprocketToken();
+      res.json({
+        success: true,
+        connected: !!token,
+        email: process.env.SHIPROCKET_EMAIL || 'alexmask09@gmail.com',
+        pickup_location: 'Home (Surat Boutique Hub)',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // POST /api/shiprocket/create-order - Create shipment on Shiprocket
+  app.post('/api/shiprocket/create-order', async (req, res) => {
+    const order = req.body.order || req.body;
+    if (!order || !order.id) {
+      return res.status(400).json({ success: false, error: 'Order payload with id is required' });
+    }
+
+    try {
+      const result = await createShiprocketOrder(order);
+      if (result.success && result.shipment_id) {
+        // Update order in server storage
+        const orders = readOrders();
+        const idx = orders.findIndex((o) => o.id === order.id);
+        if (idx >= 0) {
+          orders[idx].shiprocketOrderId = result.order_id;
+          orders[idx].shiprocketShipmentId = result.shipment_id;
+          orders[idx].shiprocketStatus = result.status || 'NEW';
+          writeOrders(orders);
+        }
+      }
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // POST /api/shiprocket/assign-awb - Ship Order & Fetch/Assign AWB tracking code
+  app.post('/api/shiprocket/assign-awb', async (req, res) => {
+    const order = req.body.order || req.body;
+    const shipmentId = req.body.shipmentId || order?.shiprocketShipmentId;
+
+    if (!order || !order.id) {
+      return res.status(400).json({ success: false, error: 'Order payload with id is required' });
+    }
+
+    try {
+      const result = await assignCourierAndAwb({ order, shipmentId });
+
+      // Update order in server storage
+      const orders = readOrders();
+      const idx = orders.findIndex((o) => o.id === order.id);
+      if (idx >= 0) {
+        orders[idx].trackingNumber = result.awb_code;
+        orders[idx].courierPartner = result.courier_name;
+        orders[idx].shiprocketAwb = result.awb_code;
+        orders[idx].shiprocketCourier = result.courier_name;
+        orders[idx].shiprocketTrackingUrl = result.tracking_url;
+        orders[idx].shiprocketShipmentId = result.shipment_id || orders[idx].shiprocketShipmentId;
+        orders[idx].fulfillmentStatus = 'shipped';
+        writeOrders(orders);
+      }
+
+      console.log(`[Shiprocket] AWB assigned for Order ${order.id}: ${result.awb_code} (${result.courier_name})`);
+      res.json({
+        ...result,
+        orderId: order.id,
+        fulfillmentStatus: 'shipped',
+      });
+    } catch (err: any) {
+      console.error('[Shiprocket] assign-awb endpoint error:', err.message);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // GET /api/shiprocket/track/:awb - Fetch live tracking from Shiprocket
+  app.get('/api/shiprocket/track/:awb', async (req, res) => {
+    const awb = req.params.awb;
+    if (!awb) {
+      return res.status(400).json({ success: false, error: 'AWB code is required' });
+    }
+
+    try {
+      const liveData = await trackShipment(awb);
+      res.json({
+        success: true,
+        awb,
+        trackingUrl: `https://shiprocket.co/tracking/${awb}`,
+        liveData,
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
     }
   });
 

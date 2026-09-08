@@ -36,5 +36,120 @@
     "fulfillmentStatus": "new",
     "adminNotes": "COD Order: Collect ₹2,159 cash on delivery. Placed via storefront by customer.",
     "transactionId": "MANUAL-1788699500118"
+  },
+  {
+    "createdAt": "2026-09-08T09:18:58.293Z",
+    "total": 450,
+    "fulfillmentStatus": "new",
+    "customer": {
+      "pincode": "395009",
+      "email": "nguynhruangbuych.tu.o.i.1.245@gmail.com",
+      "country": "India",
+      "city": "surat",
+      "address": "surat 35-36 , citylight ",
+      "state": "Gujarat",
+      "name": "akex alex",
+      "phone": "917428730894"
+    },
+    "id": "ZV-236526",
+    "giftWrapAmount": 0,
+    "isDemo": false,
+    "currency": "INR",
+    "items": [
+      {
+        "name": "BEST PRINTED SILK DAILY WEAR SAREE",
+        "customStitching": false,
+        "quantity": 1,
+        "price": 450,
+        "id": "cart-1788859070470-wwlv",
+        "selectedSize": "Free Size",
+        "notes": "",
+        "image": "/worli_saree_editorial.webp",
+        "selectedColor": "Monochrome Black, Ivory & Gold Accents",
+        "productId": "zv-trend-04"
+      }
+    ],
+    "discountAmount": 0,
+    "paymentMethod": "cod",
+    "subtotal": 450,
+    "paymentStatus": "pending",
+    "adminNotes": "COD Order: Collect ₹450 cash on delivery from customer."
+  },
+  {
+    "currency": "INR",
+    "subtotal": 750,
+    "id": "ZV-613665",
+    "createdAt": "2026-09-08T09:38:54.839Z",
+    "items": [
+      {
+        "selectedColor": "Purple",
+        "name": "tckty Women Maxi Purple Midi/Calf Length Dress",
+        "productId": "zv-dress-tckty-purple-01",
+        "image": "/tckty Women Maxi - 1.webp",
+        "selectedSize": "S",
+        "price": 750,
+        "customStitching": false,
+        "notes": "",
+        "quantity": 1,
+        "id": "cart-1788860319663-vcxs"
+      }
+    ],
+    "paymentStatus": "pending",
+    "paymentMethod": "cod",
+    "adminNotes": "COD Order: Collect ₹750 cash on delivery from customer.",
+    "isDemo": false,
+    "total": 750,
+    "giftWrapAmount": 0,
+    "fulfillmentStatus": "new",
+    "customer": {
+      "address": "surat, 35-34 city light",
+      "city": "surat",
+      "pincode": "395009",
+      "phone": "9174287308",
+      "name": "akex alex",
+      "country": "India",
+      "state": "Gujarat",
+      "email": "nguynhruangbuych.tu.o.i.1.245@gmail.com"
+    },
+    "discountAmount": 0
+  },
+  {
+    "total": 499,
+    "fulfillmentStatus": "shipped",
+    "id": "ZV-343192",
+    "isDemo": false,
+    "createdAt": "2026-09-08T09:40:52.806Z",
+    "customer": {
+      "address": "surat, 35-34 city light",
+      "city": "surat",
+      "pincode": "395009",
+      "phone": "9174287308",
+      "name": "akex alex",
+      "country": "India",
+      "state": "Gujarat",
+      "email": "nguynhruangbuych.tu.o.i.1.245@gmail.com"
+    },
+    "giftWrapAmount": 0,
+    "subtotal": 499,
+    "currency": "INR",
+    "items": [
+      {
+        "selectedSize": "L",
+        "selectedColor": "Black",
+        "quantity": 1,
+        "productId": "zv-kurti-vankar-01",
+        "id": "cart-1788860443813-6jrp",
+        "name": "VANKAR Floral Print Viscose Rayon High Low Kurta for Women (Black)",
+        "image": "/VANKAR Floral Print 1.webp",
+        "customStitching": false,
+        "price": 499,
+        "notes": ""
+      }
+    ],
+    "paymentStatus": "pending",
+    "discountAmount": 0,
+    "paymentMethod": "cod",
+    "adminNotes": "COD Order: Collect ₹499 cash on delivery from customer.",
+    "transactionId": "MANUAL-1788863477302"
   }
 ]
