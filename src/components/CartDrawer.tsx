@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Plus,
@@ -20,13 +20,14 @@ import {
   Lock,
   AlertCircle,
   Mail,
+  UserCheck,
 } from 'lucide-react';
-import { CartItem, Currency, StoreOrder, PaymentStatus } from '../types';
+import { CartItem, Currency, StoreOrder, PaymentStatus, UserAccount } from '../types';
 import { formatPrice } from './ProductCard';
 import { CURRENCY_RATES } from '../data/products';
 import { Logo } from './Logo';
 import { saveOrderToStoreAsync, formatWhatsAppPhone } from '../utils/orderStorage';
-import { getCurrentUser, associateOrderWithUser } from '../utils/authStorage';
+import { getCurrentUser, associateOrderWithUser, AUTH_CHANGE_EVENT } from '../utils/authStorage';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -55,17 +56,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const [promoError, setPromoError] = useState('');
   const [giftWrap, setGiftWrap] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<'cart' | 'checkout' | 'success'>('cart');
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => getCurrentUser());
+  const [hasManuallyEdited, setHasManuallyEdited] = useState(false);
+  const [placedItems, setPlacedItems] = useState<CartItem[]>([]);
+  const [copiedOrderId, setCopiedOrderId] = useState(false);
 
   // Checkout Form State: initialized from logged-in user, previous checkout, or clean empty form
   const [shippingInfo, setShippingInfo] = useState(() => {
     try {
-      const currentUser = getCurrentUser();
-      if (currentUser) {
-        const defAddr = currentUser.addresses?.find((a) => a.isDefault) || currentUser.addresses?.[0];
+      const user = getCurrentUser();
+      if (user) {
+        const defAddr = user.addresses?.find((a) => a.isDefault) || user.addresses?.[0];
         return {
-          name: currentUser.name || '',
-          email: currentUser.email || '',
-          phone: currentUser.phone || '',
+          name: user.name || '',
+          email: user.email || '',
+          phone: user.phone || '',
           address: defAddr?.address || '',
           city: defAddr?.city || '',
           state: defAddr?.state || 'Gujarat',
@@ -90,6 +95,51 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       country: 'India',
     };
   });
+
+  // Automatically fetch & prefill profile details whenever user logs in or enters checkout
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const user = getCurrentUser();
+      setCurrentUser(user);
+      if (user && !hasManuallyEdited) {
+        const defAddr = user.addresses?.find((a) => a.isDefault) || user.addresses?.[0];
+        setShippingInfo({
+          name: user.name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          address: defAddr?.address || '',
+          city: defAddr?.city || '',
+          state: defAddr?.state || 'Gujarat',
+          pincode: defAddr?.pincode || '',
+          country: 'India',
+        });
+      }
+    };
+
+    window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+    return () => window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+  }, [hasManuallyEdited]);
+
+  // When drawer opens or transitions to checkout, pre-fill saved profile details for logged-in user
+  useEffect(() => {
+    if (isOpen) {
+      const user = getCurrentUser();
+      setCurrentUser(user);
+      if (user && !hasManuallyEdited) {
+        const defAddr = user.addresses?.find((a) => a.isDefault) || user.addresses?.[0];
+        setShippingInfo((prev) => ({
+          name: user.name || prev.name,
+          email: user.email || prev.email,
+          phone: user.phone || prev.phone,
+          address: defAddr?.address || prev.address,
+          city: defAddr?.city || prev.city,
+          state: defAddr?.state || prev.state || 'Gujarat',
+          pincode: defAddr?.pincode || prev.pincode,
+          country: 'India',
+        }));
+      }
+    }
+  }, [isOpen, checkoutStep, hasManuallyEdited]);
 
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'upi' | 'razorpay'>('cod');
   const [upiUtr, setUpiUtr] = useState('');
@@ -126,6 +176,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     setTimeout(() => setCopiedUpi(false), 2500);
   };
 
+  const handleCopyOrderId = () => {
+    if (!orderId) return;
+    navigator.clipboard.writeText(orderId);
+    setCopiedOrderId(true);
+    setTimeout(() => setCopiedOrderId(false), 2000);
+  };
+
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setCheckoutError('');
@@ -158,6 +215,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       localStorage.setItem('zevioza_customer_shipping', JSON.stringify(shippingInfo));
     } catch {}
 
+    setPlacedItems([...items]);
     setIsProcessingPayment(true);
     const newId = `ZV-${Math.floor(100000 + Math.random() * 900000)}`;
 
@@ -341,80 +399,6 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     );
 
     window.open(`https://wa.me/918238023498?text=${message}`, '_blank');
-  };
-
-  const handleSendToCustomerWhatsApp = () => {
-    const raw = shippingInfo.phone.trim();
-    const cleanPhone = formatWhatsAppPhone(raw);
-    if (!cleanPhone || cleanPhone.length < 10) {
-      handleWhatsAppOrder();
-      return;
-    }
-
-    const itemsList = items
-      .map(
-        (i) =>
-          `• ${i.product.name} (Qty: ${i.quantity}${
-            i.selectedColor ? `, Shade: ${i.selectedColor}` : ''
-          }${i.selectedSize ? `, Size: ${i.selectedSize}` : ''}) - ₹${
-            (i.product.price + (i.customStitching ? 2500 : 0)) * i.quantity
-          }`
-      )
-      .join('\n');
-
-    const paymentText =
-      paymentMethod === 'cod'
-        ? `Cash on Delivery (₹${grandTotal} to collect on delivery)`
-        : paymentMethod === 'upi'
-        ? 'Direct UPI'
-        : 'Prepaid Online';
-
-    const msg = encodeURIComponent(
-      `Namaste ${shippingInfo.name} ji,\n\n` +
-        `Aapka Zevioza Boutique Order *#${orderId}* successfully place ho gaya hai! 🎉\n\n` +
-        `• *Total Amount:* ₹${grandTotal}\n` +
-        `• *Payment Mode:* ${paymentText}\n` +
-        `• *Payment Status:* ${paymentMethod === 'cod' ? 'PENDING ⏳ (Pay at delivery)' : 'PENDING VERIFICATION / PREPAID'}\n` +
-        `• *Delivery Address:* ${shippingInfo.address}, ${shippingInfo.city} - ${shippingInfo.pincode}\n\n` +
-        `*Items Ordered:*\n${itemsList}\n\n` +
-        `Track your order anytime at: ${window.location.origin}\n\n` +
-        `Thank you for shopping with Zevioza Boutique!`
-    );
-
-    window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
-  };
-
-  const handleEmailOrder = () => {
-    const subject = encodeURIComponent(`New Zevioza Order Placed - #${orderId} (₹${grandTotal})`);
-    const itemsList = items
-      .map(
-        (i) =>
-          `• ${i.product.name} (Qty: ${i.quantity}${
-            i.selectedColor ? `, Color: ${i.selectedColor}` : ''
-          }${i.selectedSize ? `, Size: ${i.selectedSize}` : ''}) - ₹${
-            (i.product.price + (i.customStitching ? 2500 : 0)) * i.quantity
-          }`
-      )
-      .join('\n');
-
-    const body = encodeURIComponent(
-      `Hello Store Admin,\n\nA new order has been placed on Zevioza Boutique!\n\n` +
-      `Order ID: ${orderId}\n` +
-      `Customer Name: ${shippingInfo.name}\n` +
-      `Customer Phone: ${shippingInfo.phone}\n` +
-      `Customer Email: ${shippingInfo.email}\n` +
-      `Delivery Address: ${shippingInfo.address}, ${shippingInfo.city}, ${shippingInfo.state} - ${shippingInfo.pincode}\n\n` +
-      `Items:\n${itemsList}\n\n` +
-      `Subtotal: ₹${rawSubtotal}\n` +
-      (discountApplied ? `Discount (10%): -₹${discountAmount}\n` : '') +
-      (giftWrap ? `Gift Packaging: +₹500\n` : '') +
-      `Total Amount: ₹${grandTotal}\n` +
-      `Payment Method: ${paymentMethod.toUpperCase()}\n` +
-      (upiUtr.trim() ? `Customer UTR / Ref: ${upiUtr.trim()}\n` : '') +
-      `\nView live on Admin Panel at: ${window.location.origin}/admin\n`
-    );
-
-    window.open(`mailto:ikrammask123@gmail.com?subject=${subject}&body=${body}`, '_blank');
   };
 
   const handleFinishSuccess = () => {
@@ -621,18 +605,41 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
               {/* Step 1: Shipping Address */}
               <div className="p-3 bg-white rounded-xl border border-[#debfc2]/30">
-                <span className="text-xs font-semibold text-[#6d0026] uppercase tracking-wider block mb-3">
-                  1. Boutique Delivery Address
-                </span>
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-xs font-semibold text-[#6d0026] uppercase tracking-wider block">
+                    1. Boutique Delivery Address
+                  </span>
+                  {currentUser && (
+                    <span className="text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                      <UserCheck className="w-3 h-3 text-emerald-700" /> Profile Pre-filled
+                    </span>
+                  )}
+                </div>
+
+                {currentUser && (
+                  <div className="mb-3 p-2 bg-[#fed9e2]/25 border border-[#debfc2]/60 rounded-lg flex items-center justify-between text-[11px] text-[#6d0026]">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <UserCheck className="w-3.5 h-3.5 text-[#6d0026] shrink-0" />
+                      <span className="truncate">
+                        Auto-filled for <strong>{currentUser.name}</strong>
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-[#8a7174] bg-white border border-[#debfc2]/40 px-1.5 py-0.5 rounded shrink-0 font-medium">
+                      Editable
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex flex-col gap-2.5">
                   <input
                     type="text"
                     required
                     placeholder="Full Name"
                     value={shippingInfo.name}
-                    onChange={(e) =>
-                      setShippingInfo({ ...shippingInfo, name: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setHasManuallyEdited(true);
+                      setShippingInfo({ ...shippingInfo, name: e.target.value });
+                    }}
                     className="text-xs p-2.5 bg-[#f6f3f2] rounded-lg border border-[#debfc2]/40 focus:outline-none focus:border-[#6d0026]"
                   />
                   <div className="grid grid-cols-2 gap-2">
@@ -641,19 +648,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       required
                       placeholder="Email"
                       value={shippingInfo.email}
-                      onChange={(e) =>
-                        setShippingInfo({ ...shippingInfo, email: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setHasManuallyEdited(true);
+                        setShippingInfo({ ...shippingInfo, email: e.target.value });
+                      }}
                       className="text-xs p-2.5 bg-[#f6f3f2] rounded-lg border border-[#debfc2]/40 focus:outline-none focus:border-[#6d0026]"
                     />
                     <input
                       type="tel"
                       required
-                      placeholder="Phone Number (for SMS & Tracking)"
+                      placeholder="Mobile Number (10 digits)"
                       value={shippingInfo.phone}
-                      onChange={(e) =>
-                        setShippingInfo({ ...shippingInfo, phone: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setHasManuallyEdited(true);
+                        setShippingInfo({ ...shippingInfo, phone: e.target.value });
+                      }}
                       className="text-xs p-2.5 bg-[#f6f3f2] rounded-lg border border-[#debfc2]/40 focus:outline-none focus:border-[#6d0026]"
                     />
                   </div>
@@ -662,9 +671,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     required
                     placeholder="Street Address, House / Flat No, Landmark"
                     value={shippingInfo.address}
-                    onChange={(e) =>
-                      setShippingInfo({ ...shippingInfo, address: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setHasManuallyEdited(true);
+                      setShippingInfo({ ...shippingInfo, address: e.target.value });
+                    }}
                     className="text-xs p-2.5 bg-[#f6f3f2] rounded-lg border border-[#debfc2]/40 focus:outline-none focus:border-[#6d0026]"
                   />
                   <div className="grid grid-cols-3 gap-2">
@@ -672,27 +682,30 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       type="text"
                       placeholder="City"
                       value={shippingInfo.city}
-                      onChange={(e) =>
-                        setShippingInfo({ ...shippingInfo, city: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setHasManuallyEdited(true);
+                        setShippingInfo({ ...shippingInfo, city: e.target.value });
+                      }}
                       className="text-xs p-2.5 bg-[#f6f3f2] rounded-lg border border-[#debfc2]/40 focus:outline-none focus:border-[#6d0026]"
                     />
                     <input
                       type="text"
                       placeholder="Pincode"
                       value={shippingInfo.pincode}
-                      onChange={(e) =>
-                        setShippingInfo({ ...shippingInfo, pincode: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setHasManuallyEdited(true);
+                        setShippingInfo({ ...shippingInfo, pincode: e.target.value });
+                      }}
                       className="text-xs p-2.5 bg-[#f6f3f2] rounded-lg border border-[#debfc2]/40 focus:outline-none focus:border-[#6d0026]"
                     />
                     <input
                       type="text"
                       placeholder="Country"
                       value={shippingInfo.country}
-                      onChange={(e) =>
-                        setShippingInfo({ ...shippingInfo, country: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setHasManuallyEdited(true);
+                        setShippingInfo({ ...shippingInfo, country: e.target.value });
+                      }}
                       className="text-xs p-2.5 bg-[#f6f3f2] rounded-lg border border-[#debfc2]/40 focus:outline-none focus:border-[#6d0026]"
                     />
                   </div>
@@ -943,28 +956,77 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           )}
 
           {checkoutStep === 'success' && (
-            <div className="text-center py-8 flex flex-col items-center">
-              <div className="mb-3">
+            <div className="text-center py-6 flex flex-col items-center">
+              <div className="mb-2">
                 <Logo size="md" />
               </div>
-              <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3 shadow-xs">
-                <CheckCircle className="w-8 h-8" />
+              <div className="w-13 h-13 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mb-2.5 shadow-xs">
+                <CheckCircle className="w-7 h-7" />
               </div>
-              <span className="text-xs font-semibold text-[#8a7174] uppercase tracking-widest">
-                Congratulations
+              <span className="text-[11px] font-semibold text-[#8a7174] uppercase tracking-widest">
+                Order Received
               </span>
-              <h3 className="font-display text-2xl font-bold text-[#6d0026] mt-1 mb-2">
-                Order Confirmed!
+              <h3 className="font-display text-2xl font-bold text-[#6d0026] mt-0.5 mb-1.5">
+                Thank You for Your Order!
               </h3>
-              <p className="text-xs font-medium text-[#1c1b1b] bg-[#ffd9dd]/50 px-3 py-1 rounded-full mb-4">
-                Order ID: {orderId}
-              </p>
-              <p className="text-xs text-[#574144] max-w-xs leading-relaxed mb-5">
-                Thank you for choosing Zevioza. Your handcrafted pieces are being prepared and will be dispatched to {shippingInfo.city}.
+
+              {/* Order ID Pill with Copy */}
+              <div className="flex items-center gap-1.5 bg-[#ffd9dd]/60 border border-[#debfc2]/60 px-3.5 py-1 rounded-full mb-3">
+                <span className="text-xs font-semibold text-[#6d0026]">
+                  Order ID: <span className="font-mono tracking-wide">{orderId}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyOrderId}
+                  className="p-1 hover:bg-white/70 rounded transition-colors text-[#6d0026]"
+                  title="Copy Order ID"
+                >
+                  {copiedOrderId ? <Check className="w-3.5 h-3.5 text-emerald-700" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+
+              <p className="text-xs text-[#574144] max-w-xs leading-relaxed mb-4">
+                Your order is confirmed and our artisans have commenced preparation. We will deliver to {shippingInfo.city}.
               </p>
 
-              {/* Order Receipt Card */}
-              <div className="w-full p-4 bg-white rounded-xl border border-[#debfc2]/30 text-left text-xs mb-5 flex flex-col gap-2 shadow-xs">
+              {/* Comprehensive Customer Order Summary Card */}
+              <div className="w-full p-4 bg-white rounded-xl border border-[#debfc2]/40 text-left text-xs mb-4 flex flex-col gap-2.5 shadow-xs">
+                <div className="flex items-center justify-between pb-2 border-b border-[#f0eded]">
+                  <span className="font-semibold text-[#6d0026] uppercase text-[10px] tracking-wider">
+                    Order Summary
+                  </span>
+                  <span className="text-[10px] text-[#8a7174]">
+                    {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+
+                {/* Items Purchased List */}
+                {(placedItems.length > 0 ? placedItems : items).length > 0 && (
+                  <div className="flex flex-col gap-2 pb-2 border-b border-[#f0eded]">
+                    {(placedItems.length > 0 ? placedItems : items).map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-2.5">
+                        <img
+                          src={item.selectedImage || item.product.image}
+                          alt={item.product.name}
+                          className="w-10 h-12 object-cover rounded border border-[#debfc2]/30"
+                        />
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className="font-medium text-[#1c1b1b] truncate text-xs">{item.product.name}</p>
+                          <p className="text-[10px] text-[#8a7174]">
+                            Qty: {item.quantity}
+                            {item.selectedSize ? ` • Size: ${item.selectedSize}` : ''}
+                            {item.selectedColor ? ` • ${item.selectedColor}` : ''}
+                            {item.customStitching ? ' • +Stitched' : ''}
+                          </p>
+                        </div>
+                        <span className="font-medium text-[#1c1b1b] text-xs">
+                          {formatPrice((item.product.price + (item.customStitching ? 2500 : 0)) * item.quantity, currency)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between text-[#574144]">
                   <span>Payment Mode:</span>
                   <span className="font-semibold text-[#1c1b1b]">
@@ -975,99 +1037,64 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       : 'Cash on Delivery (COD)'}
                   </span>
                 </div>
+
                 <div className="flex items-center justify-between text-[#574144]">
                   <span>Payment Status:</span>
                   {paymentMethod === 'cod' ? (
-                    <span className="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded">
-                      PENDING • Pay {formatPrice(grandTotal, currency)} at Doorstep
+                    <span className="text-[10px] font-bold bg-amber-50 border border-amber-200 text-amber-900 px-2 py-0.5 rounded">
+                      Pay {formatPrice(grandTotal, currency)} at Doorstep
                     </span>
                   ) : paymentMethod === 'upi' ? (
-                    <span className="text-[10px] font-bold bg-blue-100 text-blue-900 px-2 py-0.5 rounded">
-                      PENDING • Store Verification Required
+                    <span className="text-[10px] font-bold bg-blue-50 border border-blue-200 text-blue-900 px-2 py-0.5 rounded">
+                      Pending Verification
                     </span>
                   ) : (
-                    <span className="text-[10px] font-bold bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded">
-                      PAID • Verified by Gateway
+                    <span className="text-[10px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-900 px-2 py-0.5 rounded">
+                      Verified & Paid
                     </span>
                   )}
                 </div>
-                <div className="flex items-center justify-between text-[#574144]">
-                  <span>Delivery Address:</span>
-                  <span className="font-semibold text-[#1c1b1b] text-right truncate max-w-[180px]">
-                    {shippingInfo.address}, {shippingInfo.city}
+
+                <div className="flex items-start justify-between text-[#574144] gap-2">
+                  <span className="shrink-0">Shipping To:</span>
+                  <span className="font-medium text-[#1c1b1b] text-right truncate">
+                    {shippingInfo.name}, {shippingInfo.city} ({shippingInfo.pincode})
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-[#574144]">
-                  <span>Estimated Delivery:</span>
-                  <span className="font-semibold text-[#1c1b1b]">3-5 Business Days</span>
-                </div>
-                <div className="flex items-center justify-between text-[#574144]">
-                  <span>Packaging:</span>
-                  <span className="font-semibold text-[#1c1b1b]">
-                    {giftWrap ? 'Signature Rose Velvet Box' : 'Luxury Silk Pouch'}
-                  </span>
-                </div>
+
                 <div className="flex items-center justify-between text-[#574144] pt-2 border-t border-[#f0eded]">
-                  <span>Total Amount:</span>
+                  <span className="font-semibold">Grand Total:</span>
                   <span className="font-display font-bold text-base text-[#6d0026]">
                     {formatPrice(grandTotal, currency)}
                   </span>
                 </div>
               </div>
 
-              {/* Live Tracking Action */}
+              {/* Track Order Action */}
               {onOpenTrackOrder && orderId && (
                 <button
                   type="button"
+                  id="track-order-btn"
                   onClick={() => {
                     const currentId = orderId;
                     handleFinishSuccess();
                     onOpenTrackOrder(currentId);
                   }}
-                  className="w-full mb-2 bg-[#6d0026] hover:bg-[#8e1b3b] text-white py-3 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                  className="w-full mb-2.5 bg-[#6d0026] hover:bg-[#8e1b3b] text-white py-3 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
                 >
                   <Truck className="w-4 h-4" />
-                  <span>Track This Order Live</span>
+                  <span>Track Order</span>
                 </button>
               )}
 
-              {/* WhatsApp Receipt to Customer */}
-              {shippingInfo.phone && (
-                <button
-                  type="button"
-                  onClick={handleSendToCustomerWhatsApp}
-                  className="w-full mb-2.5 bg-emerald-700 hover:bg-emerald-800 text-white py-3 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Send Receipt to Customer WhatsApp ({shippingInfo.phone})</span>
-                </button>
-              )}
-
-              {/* Chat with Boutique Support */}
+              {/* Return to Boutique */}
               <button
                 type="button"
-                onClick={handleWhatsAppOrder}
-                className="w-full mb-2 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
-              >
-                <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Notify Boutique on WhatsApp (82380 23498)</span>
-              </button>
-
-              {/* Email Notification to Store Owner */}
-              <button
-                type="button"
-                onClick={handleEmailOrder}
-                className="w-full mb-3 bg-white hover:bg-rose-50 text-[#6d0026] border border-[#debfc2] py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
-              >
-                <Mail className="w-3.5 h-3.5 text-[#6d0026]" />
-                <span>Send Order Email to Owner (ikrammask123@gmail.com)</span>
-              </button>
-
-              <button
+                id="return-to-boutique-btn"
                 onClick={handleFinishSuccess}
-                className="w-full bg-[#f0eded] hover:bg-[#e5e2e1] text-[#574144] py-3 rounded-full text-xs font-semibold uppercase tracking-widest transition-all"
+                className="w-full bg-[#f6f3f2] hover:bg-[#eae6e5] text-[#574144] py-2.5 rounded-full text-xs font-semibold uppercase tracking-widest transition-all cursor-pointer"
               >
-                Return to Boutique
+                Continue Shopping
               </button>
             </div>
           )}

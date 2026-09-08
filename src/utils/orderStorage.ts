@@ -63,6 +63,17 @@ const DEMO_ORDER_IDS = new Set(['ZV-928410', 'ZV-849102', 'ZV-729011', 'ZV-61029
 let isSyncingWithServer = false;
 
 /**
+ * Recursively removes undefined fields and prepares document for Firebase Firestore.
+ * Firestore strictly rejects documents that contain any field with an `undefined` value.
+ */
+export function cleanForFirestore<T>(data: T): T {
+  if (data === null || data === undefined) {
+    return null as unknown as T;
+  }
+  return JSON.parse(JSON.stringify(data));
+}
+
+/**
  * Real-time subscription to Firestore orders collection.
  * Triggers callback immediately whenever any device creates or updates an order.
  */
@@ -93,7 +104,7 @@ export function subscribeToFirestoreOrders(callback: (orders: StoreOrder[]) => v
           if (!map.has(l.id) && !l.isDemo && !DEMO_ORDER_IDS.has(l.id)) {
             map.set(l.id, l);
             // Push missing local order to Firestore in background
-            setDoc(doc(db, 'orders', l.id), l).catch(() => {});
+            setDoc(doc(db, 'orders', l.id), cleanForFirestore(l)).catch(() => {});
           }
         }
 
@@ -147,7 +158,7 @@ export async function syncOrdersWithServer(): Promise<StoreOrder[]> {
     for (const unsynced of unsyncedLocals) {
       map.set(unsynced.id, unsynced);
       try {
-        await setDoc(doc(db, 'orders', unsynced.id), unsynced);
+        await setDoc(doc(db, 'orders', unsynced.id), cleanForFirestore(unsynced));
       } catch (err) {
         console.warn('Failed to upload unsynced order to Firestore:', err);
       }
@@ -294,7 +305,8 @@ export async function saveOrderToStoreAsync(order: StoreOrder): Promise<void> {
 
   // 2. Persist to Firestore Live Cloud Database
   try {
-    await setDoc(doc(db, 'orders', order.id), orderWithFlag);
+    const sanitized = cleanForFirestore(orderWithFlag);
+    await setDoc(doc(db, 'orders', order.id), sanitized);
     console.log(`[Firestore Live Database] Order ${order.id} committed to cloud!`);
   } catch (firestoreErr) {
     handleFirestoreError(firestoreErr, OperationType.WRITE, `orders/${order.id}`);
@@ -305,7 +317,7 @@ export async function saveOrderToStoreAsync(order: StoreOrder): Promise<void> {
     fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderWithFlag),
+      body: JSON.stringify(cleanForFirestore(orderWithFlag)),
     }).catch(() => {});
   } catch {}
 }
@@ -362,7 +374,7 @@ export function updateOrderFulfillment(orderId: string, fulfillmentStatus: Order
     window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
 
     // Live Cloud Update
-    setDoc(doc(db, 'orders', orderId), { fulfillmentStatus }, { merge: true }).catch((e) => {
+    setDoc(doc(db, 'orders', orderId), cleanForFirestore({ fulfillmentStatus }), { merge: true }).catch((e) => {
       handleFirestoreError(e, OperationType.UPDATE, `orders/${orderId}`);
     });
 
@@ -402,7 +414,7 @@ export function updateOrderPayment(orderId: string, paymentStatus: PaymentStatus
     };
 
     // Live Cloud Update
-    setDoc(doc(db, 'orders', orderId), payload, { merge: true }).catch((e) => {
+    setDoc(doc(db, 'orders', orderId), cleanForFirestore(payload), { merge: true }).catch((e) => {
       handleFirestoreError(e, OperationType.UPDATE, `orders/${orderId}`);
     });
 
@@ -427,7 +439,7 @@ export function updateOrderDetails(orderId: string, updates: Partial<StoreOrder>
     window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
 
     // Live Cloud Update
-    setDoc(doc(db, 'orders', orderId), updates, { merge: true }).catch((e) => {
+    setDoc(doc(db, 'orders', orderId), cleanForFirestore(updates), { merge: true }).catch((e) => {
       handleFirestoreError(e, OperationType.UPDATE, `orders/${orderId}`);
     });
 
