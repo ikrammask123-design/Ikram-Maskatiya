@@ -1417,10 +1417,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                               </button>
                             </div>
 
-                            {/* Prominent Shiprocket 'Ship Order / Fetch AWB' Button */}
+                            {/* Prominent Ship via Shiprocket / Generate AWB Button */}
                             <div className="pt-1">
                               <button
-                                id={`btn-shiprocket-dispatch-${order.id}`}
+                                id={`btn-ship-via-shiprocket-${order.id}`}
                                 onClick={() => handleShipWithShiprocket(order)}
                                 disabled={shippingOrderId === order.id}
                                 className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs ${
@@ -1432,15 +1432,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                                 {shippingOrderId === order.id ? (
                                   <div className="flex items-center gap-2">
                                     <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                    <span>Contacting Shiprocket API & Assigning Courier...</span>
+                                    <span>Creating Shipment on Shiprocket & Fetching AWB...</span>
                                   </div>
                                 ) : (
                                   <>
                                     <Truck className="w-4 h-4" />
                                     <span>
                                       {order.trackingNumber
-                                        ? '🔄 Re-fetch / Update AWB (Shiprocket)'
-                                        : '🚚 Ship Order / Fetch AWB (Shiprocket)'}
+                                        ? '🔄 Generate AWB / Re-sync (Shiprocket)'
+                                        : '🚀 Ship via Shiprocket / Generate AWB'}
                                     </span>
                                   </>
                                 )}

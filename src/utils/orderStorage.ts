@@ -328,9 +328,19 @@ export async function saveOrderToStoreAsync(order: StoreOrder): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ order: orderWithFlag }),
     })
-      .then((res) => res.json())
+      .then(async (res) => {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          try {
+            return await res.json();
+          } catch {
+            return { success: false, error: 'Failed to parse JSON response' };
+          }
+        }
+        return { success: false, error: 'Non-JSON response' };
+      })
       .then((srData) => {
-        if (srData.success && srData.shipment_id) {
+        if (srData && srData.success && srData.shipment_id) {
           console.log(`[Shiprocket Sync] Shipment registered: ID ${srData.shipment_id}`);
           // Update Firestore
           setDoc(
@@ -381,8 +391,28 @@ export async function shipOrderWithShiprocket(order: StoreOrder): Promise<{
       body: JSON.stringify({ order }),
     });
 
-    const data = await res.json();
-    if (data.success && data.awb_code) {
+    const contentType = res.headers.get('content-type') || '';
+    let data: any;
+
+    if (contentType.includes('application/json')) {
+      try {
+        data = await res.json();
+      } catch {
+        return {
+          success: false,
+          error: 'Server returned invalid JSON format while processing AWB assignment',
+        };
+      }
+    } else {
+      const rawText = await res.text();
+      const sanitized = rawText.replace(/<[^>]*>?/gm, '').trim().slice(0, 160);
+      return {
+        success: false,
+        error: `Shiprocket endpoint returned unexpected HTML/text (${res.status}): ${sanitized || 'Please try again'}`,
+      };
+    }
+
+    if (data && data.success && data.awb_code) {
       // 1. Update local storage
       const existing = getStoredOrders();
       const updated = existing.map((o) =>
@@ -430,9 +460,15 @@ export async function shipOrderWithShiprocket(order: StoreOrder): Promise<{
       };
     }
 
-    return { success: false, error: data.error || 'Failed to assign Shiprocket courier' };
+    return {
+      success: false,
+      error: data?.error || 'Failed to assign Shiprocket courier. Please try again.',
+    };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    return {
+      success: false,
+      error: err.message || 'Connection error while communicating with Shiprocket service',
+    };
   }
 }
 

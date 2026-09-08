@@ -151,5 +151,43 @@
     "paymentMethod": "cod",
     "adminNotes": "COD Order: Collect ₹499 cash on delivery from customer.",
     "transactionId": "MANUAL-1788863477302"
+  },
+  {
+    "id": "ZV-346370",
+    "adminNotes": "COD Order: Collect ₹450 cash on delivery from customer.",
+    "createdAt": "2026-09-08T10:43:10.577Z",
+    "discountAmount": 0,
+    "giftWrapAmount": 0,
+    "subtotal": 450,
+    "currency": "INR",
+    "items": [
+      {
+        "customStitching": false,
+        "quantity": 1,
+        "selectedColor": "Monochrome Black, Ivory & Gold Accents",
+        "image": "/worli_saree_editorial.webp",
+        "name": "BEST PRINTED SILK DAILY WEAR SAREE",
+        "id": "cart-1788864106396-d1sl",
+        "price": 450,
+        "selectedSize": "Free Size",
+        "notes": "",
+        "productId": "zv-trend-04"
+      }
+    ],
+    "paymentStatus": "pending",
+    "total": 450,
+    "customer": {
+      "email": "rajarrr04@gmail.com",
+      "address": "224 3rd floor new aashiwad apt near denish cake udhana surat ",
+      "pincode": "394210",
+      "city": "Surat",
+      "country": "India",
+      "name": "raja",
+      "phone": "8866242685",
+      "state": "Gujarat"
+    },
+    "paymentMethod": "cod",
+    "fulfillmentStatus": "new",
+    "isDemo": false
   }
 ]

@@ -207,6 +207,7 @@ async function startServer() {
 
   // GET /api/shiprocket/status - Check connection and token
   app.get('/api/shiprocket/status', async (req, res) => {
+    res.type('application/json');
     try {
       const token = await getShiprocketToken();
       res.json({
@@ -217,12 +218,14 @@ async function startServer() {
         timestamp: new Date().toISOString(),
       });
     } catch (err: any) {
-      res.status(500).json({ success: false, error: err.message });
+      console.error('[Shiprocket] status check error:', err.message);
+      res.status(500).json({ success: false, error: err.message || 'Shiprocket authentication failed' });
     }
   });
 
   // POST /api/shiprocket/create-order - Create shipment on Shiprocket
   app.post('/api/shiprocket/create-order', async (req, res) => {
+    res.type('application/json');
     const order = req.body.order || req.body;
     if (!order || !order.id) {
       return res.status(400).json({ success: false, error: 'Order payload with id is required' });
@@ -243,12 +246,14 @@ async function startServer() {
       }
       res.json(result);
     } catch (err: any) {
-      res.status(500).json({ success: false, error: err.message });
+      console.error('[Shiprocket] create-order endpoint error:', err.message);
+      res.status(500).json({ success: false, error: err.message || 'Order creation failed' });
     }
   });
 
   // POST /api/shiprocket/assign-awb - Ship Order & Fetch/Assign AWB tracking code
   app.post('/api/shiprocket/assign-awb', async (req, res) => {
+    res.type('application/json');
     const order = req.body.order || req.body;
     const shipmentId = req.body.shipmentId || order?.shiprocketShipmentId;
 
@@ -281,12 +286,13 @@ async function startServer() {
       });
     } catch (err: any) {
       console.error('[Shiprocket] assign-awb endpoint error:', err.message);
-      res.status(500).json({ success: false, error: err.message });
+      res.status(500).json({ success: false, error: err.message || 'AWB assignment failed' });
     }
   });
 
   // GET /api/shiprocket/track/:awb - Fetch live tracking from Shiprocket
   app.get('/api/shiprocket/track/:awb', async (req, res) => {
+    res.type('application/json');
     const awb = req.params.awb;
     if (!awb) {
       return res.status(400).json({ success: false, error: 'AWB code is required' });
@@ -301,7 +307,8 @@ async function startServer() {
         liveData,
       });
     } catch (err: any) {
-      res.status(500).json({ success: false, error: err.message });
+      console.error('[Shiprocket] track endpoint error:', err.message);
+      res.status(500).json({ success: false, error: err.message || 'Tracking fetch failed' });
     }
   });
 

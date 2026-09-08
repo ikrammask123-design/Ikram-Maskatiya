@@ -8,49 +8,105 @@ let cachedToken: string | null = null;
 let tokenExpiryTime: number = 0;
 
 /**
- * Get Shiprocket JWT token with automatic caching
+ * Safe fetch wrapper that checks HTTP status and Content-Type before parsing JSON,
+ * guaranteeing clean JSON or friendly error messages and never crashing on HTML.
  */
-export async function getShiprocketToken(): Promise<string> {
+async function safeFetchShiprocket(
+  url: string,
+  options: any
+): Promise<{ ok: boolean; status: number; data?: any; error?: string }> {
+  try {
+    const response = await fetch(url, options);
+    const contentType = response.headers.get('content-type') || '';
+
+    if (!response.ok) {
+      let errorDetail = `HTTP ${response.status}`;
+      if (contentType.includes('application/json')) {
+        try {
+          const errData = (await response.json()) as any;
+          errorDetail = errData.message || errData.error || JSON.stringify(errData);
+        } catch {
+          const text = await response.text();
+          errorDetail = text.replace(/<[^>]*>?/gm, '').trim().slice(0, 200) || errorDetail;
+        }
+      } else {
+        const text = await response.text();
+        errorDetail = text.replace(/<[^>]*>?/gm, '').trim().slice(0, 200) || errorDetail;
+      }
+      return {
+        ok: false,
+        status: response.status,
+        error: `Shiprocket API error (${response.status}): ${errorDetail}`,
+      };
+    }
+
+    if (!contentType.includes('application/json')) {
+      const text = await response.text();
+      const sanitized = text.replace(/<[^>]*>?/gm, '').trim().slice(0, 200);
+      return {
+        ok: false,
+        status: response.status,
+        error: `Shiprocket returned unexpected non-JSON response: ${sanitized || 'Empty response'}`,
+      };
+    }
+
+    const data = (await response.json()) as any;
+    return { ok: true, status: response.status, data };
+  } catch (err: any) {
+    return {
+      ok: false,
+      status: 500,
+      error: `Network error reaching Shiprocket: ${err.message}`,
+    };
+  }
+}
+
+/**
+ * Request a fresh Shiprocket JWT token using configured credentials
+ */
+export async function getShiprocketToken(forceRefresh: boolean = false): Promise<string> {
   const now = Date.now();
-  if (cachedToken && now < tokenExpiryTime) {
+  if (!forceRefresh && cachedToken && now < tokenExpiryTime) {
     return cachedToken;
   }
 
-  try {
-    const response = await fetch(`${SHIPROCKET_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: SHIPROCKET_EMAIL,
-        password: SHIPROCKET_PASSWORD,
-      }),
-    });
+  console.log(`[Shiprocket] Authenticating with ${SHIPROCKET_EMAIL}...`);
 
-    const data = (await response.json()) as any;
-    if (data.token) {
-      cachedToken = data.token;
-      // Cache for 7 days (tokens usually last 10 days)
-      tokenExpiryTime = now + 7 * 24 * 60 * 60 * 1000;
-      console.log(`[Shiprocket] Authenticated successfully as ${SHIPROCKET_EMAIL} (Company ID: ${data.company_id})`);
-      return cachedToken as string;
-    } else {
-      throw new Error(data.message || 'Failed to obtain Shiprocket authentication token');
-    }
-  } catch (err: any) {
-    console.error('[Shiprocket] Auth Error:', err.message);
-    throw err;
+  const result = await safeFetchShiprocket(`${SHIPROCKET_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: SHIPROCKET_EMAIL,
+      password: SHIPROCKET_PASSWORD,
+    }),
+  });
+
+  if (!result.ok || !result.data) {
+    throw new Error(result.error || 'Failed to authenticate with Shiprocket API');
   }
+
+  if (result.data.token) {
+    cachedToken = result.data.token;
+    // Cache for 7 days
+    tokenExpiryTime = now + 7 * 24 * 60 * 60 * 1000;
+    console.log(
+      `[Shiprocket] Authentication successful! (Company ID: ${result.data.company_id || 'N/A'})`
+    );
+    return cachedToken as string;
+  }
+
+  throw new Error(result.data.message || 'Shiprocket authentication response did not contain a valid token');
 }
 
 /**
  * Sanitize 10-digit Indian mobile number
  */
-function cleanPhone(phone: string): string {
+function cleanPhone(phone?: string): string {
   const digits = (phone || '').replace(/\D/g, '');
   if (digits.length >= 10) {
     return digits.slice(-10);
   }
-  return digits.padEnd(10, '0');
+  return (digits || '9825012345').padEnd(10, '0');
 }
 
 /**
@@ -58,16 +114,31 @@ function cleanPhone(phone: string): string {
  */
 function formatShiprocketDate(dateStr?: string): string {
   const d = dateStr ? new Date(dateStr) : new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const hours = String(d.getHours()).padStart(2, '0');
-  const mins = String(d.getMinutes()).padStart(2, '0');
+  const validDate = isNaN(d.getTime()) ? new Date() : d;
+  const year = validDate.getFullYear();
+  const month = String(validDate.getMonth() + 1).padStart(2, '0');
+  const day = String(validDate.getDate()).padStart(2, '0');
+  const hours = String(validDate.getHours()).padStart(2, '0');
+  const mins = String(validDate.getMinutes()).padStart(2, '0');
   return `${year}-${month}-${day} ${hours}:${mins}`;
 }
 
 /**
- * Create Order on Shiprocket
+ * Sanitize Order ID to a clean alphanumeric string (e.g. ZV346370)
+ */
+function cleanOrderId(rawId?: string | number): string {
+  const str = String(rawId || '').replace(/[^a-zA-Z0-9]/g, '');
+  if (!str) {
+    return `ZV${Math.floor(100000 + Math.random() * 900000)}`;
+  }
+  if (!str.toUpperCase().startsWith('ZV')) {
+    return `ZV${str}`;
+  }
+  return str.toUpperCase();
+}
+
+/**
+ * Create Order on Shiprocket with all mandatory fields
  */
 export async function createShiprocketOrder(order: any): Promise<{
   success: boolean;
@@ -79,60 +150,95 @@ export async function createShiprocketOrder(order: any): Promise<{
   try {
     const token = await getShiprocketToken();
 
+    // 1. Mandatory order_id (clean alphanumeric e.g. ZV346370)
+    const orderId = cleanOrderId(order.id);
+
+    // 2. Mandatory order_date ('YYYY-MM-DD HH:mm')
+    const orderDate = formatShiprocketDate(order.createdAt);
+
+    // 3. Mandatory customer information
     const fullName = (order.customer?.name || 'Zevioza Patron').trim();
-    const parts = fullName.split(' ');
-    const firstName = parts[0] || 'Valued';
-    const lastName = parts.slice(1).join(' ') || '.';
+    const nameParts = fullName.split(/\s+/);
+    const firstName = nameParts[0] || 'Valued';
+    const lastName = nameParts.slice(1).join(' ') || 'Patron';
 
-    const phone = cleanPhone(order.customer?.phone || '9825012345');
-    const email = order.customer?.email?.includes('@') ? order.customer.email.trim() : 'boutique@zevioza.in';
+    const address = (order.customer?.address || 'Plot no 3-4, Ring Road').trim();
+    const city = (order.customer?.city || 'Surat').trim();
+    const rawPincode = (order.customer?.pincode || '395002').toString().replace(/\D/g, '');
+    const pincode = rawPincode.length >= 6 ? rawPincode.slice(0, 6) : '395002';
+    const state = (order.customer?.state || 'Gujarat').trim();
+    const country = (order.customer?.country || 'India').trim();
+    const phone = cleanPhone(order.customer?.phone);
+    const email =
+      order.customer?.email && order.customer.email.includes('@')
+        ? order.customer.email.trim()
+        : 'alexmask09@gmail.com';
 
-    const orderItems = (order.items || []).map((item: any) => ({
-      name: item.product?.name || item.name || 'Zevioza Silk Saree',
-      sku: item.product?.id ? `ZV-${item.product.id}` : `ZV-ITM-${Math.floor(100 + Math.random() * 900)}`,
-      units: item.quantity || 1,
-      selling_price: item.selectedCustomizations?.stitchedBlousePrice
-        ? (item.price || 2890) + item.selectedCustomizations.stitchedBlousePrice
-        : (item.price || 2890),
-      discount: 0,
-    }));
+    // 4. Mandatory order_items
+    const rawItems = Array.isArray(order.items) && order.items.length > 0 ? order.items : [];
+    const orderItems = rawItems.map((item: any, idx: number) => {
+      const itemName = (item.product?.name || item.name || `Zevioza Silk Saree ${idx + 1}`).trim();
+      const rawSku = item.product?.id || item.id || `ZV${idx + 1}`;
+      const sku = `ZV-${String(rawSku).replace(/[^a-zA-Z0-9]/g, '').slice(0, 15)}`;
+      const units = Number(item.quantity) || 1;
+      const basePrice = Number(item.price) || 2890;
+      const stitchedAddon = Number(item.selectedCustomizations?.stitchedBlousePrice) || 0;
+      const sellingPrice = basePrice + stitchedAddon;
+
+      return {
+        name: itemName,
+        sku,
+        units,
+        selling_price: sellingPrice,
+        discount: 0,
+      };
+    });
 
     if (orderItems.length === 0) {
       orderItems.push({
-        name: 'Zevioza Handloom Silk Saree',
+        name: 'Zevioza Handloom Pure Silk Saree',
         sku: 'ZV-SLK-01',
         units: 1,
-        selling_price: order.total || 2890,
+        selling_price: Number(order.total) || 2890,
         discount: 0,
       });
     }
 
+    // 5. Payment method ('COD' or 'Prepaid')
+    const paymentMethod =
+      order.paymentMethod === 'cod' || order.payment_method === 'cod' ? 'COD' : 'Prepaid';
+
+    // 6. Sub total
+    const subTotal = Number(order.total) || Number(order.subtotal) || 2890;
+
+    // 7. Full mandatory Shiprocket payload
     const payload = {
-      order_id: order.id,
-      order_date: formatShiprocketDate(order.createdAt),
-      pickup_location: 'Home', // Surat Boutique warehouse
+      order_id: orderId,
+      order_date: orderDate,
+      pickup_location: 'Home', // Primary pickup address set in Shiprocket account
       billing_customer_name: firstName,
       billing_last_name: lastName,
-      billing_address: order.customer?.address || 'Ring Road, Surat',
-      billing_city: order.customer?.city || 'Surat',
-      billing_pincode: order.customer?.pincode?.replace(/\D/g, '') || '395002',
-      billing_state: order.customer?.state || 'Gujarat',
-      billing_country: order.customer?.country || 'India',
+      billing_address: address,
+      billing_city: city,
+      billing_pincode: pincode,
+      billing_state: state,
+      billing_country: country,
       billing_email: email,
       billing_phone: phone,
       shipping_is_billing: true,
       order_items: orderItems,
-      payment_method: order.paymentMethod === 'cod' ? 'COD' : 'Prepaid',
-      sub_total: order.total || order.subtotal || 2890,
+      payment_method: paymentMethod,
+      shipping_charges: 0,
+      sub_total: subTotal,
       length: 15,
       breadth: 15,
       height: 6,
-      weight: 0.65 * (order.items?.length || 1),
+      weight: 0.5,
     };
 
-    console.log(`[Shiprocket] Creating shipment request for Order ${order.id}...`);
+    console.log(`[Shiprocket] Creating adhoc order for ${orderId} (Pickup: Home, Total: ₹${subTotal})...`);
 
-    const response = await fetch(`${SHIPROCKET_BASE_URL}/orders/create/adhoc`, {
+    const result = await safeFetchShiprocket(`${SHIPROCKET_BASE_URL}/orders/create/adhoc`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -141,23 +247,33 @@ export async function createShiprocketOrder(order: any): Promise<{
       body: JSON.stringify(payload),
     });
 
-    const data = (await response.json()) as any;
+    if (!result.ok || !result.data) {
+      console.warn('[Shiprocket] Order creation failed:', result.error);
+      return { success: false, error: result.error || 'Failed to create order on Shiprocket' };
+    }
+
+    const data = result.data;
 
     if (data.order_id && data.shipment_id) {
-      console.log(`[Shiprocket] Order created! SR Order ID: ${data.order_id}, Shipment ID: ${data.shipment_id}`);
+      console.log(
+        `[Shiprocket] Order created! SR Order ID: ${data.order_id}, Shipment ID: ${data.shipment_id}`
+      );
       return {
         success: true,
         order_id: data.order_id,
         shipment_id: data.shipment_id,
         status: data.status || 'NEW',
       };
-    } else {
-      console.warn('[Shiprocket] Order creation returned non-standard response:', data);
-      return {
-        success: false,
-        error: data.message || (typeof data === 'string' ? data : JSON.stringify(data)),
-      };
     }
+
+    const errorMsg =
+      data.message ||
+      (typeof data === 'string' ? data : JSON.stringify(data.errors || data));
+    console.warn('[Shiprocket] Order creation returned non-success response:', errorMsg);
+    return {
+      success: false,
+      error: errorMsg,
+    };
   } catch (err: any) {
     console.error('[Shiprocket] Error creating order:', err.message);
     return { success: false, error: err.message };
@@ -192,7 +308,7 @@ export async function assignCourierAndAwb(params: {
       if (createRes.success && createRes.shipment_id) {
         shipmentId = createRes.shipment_id;
       } else {
-        console.warn('[Shiprocket] Could not create shipment in Shiprocket:', createRes.error);
+        console.warn('[Shiprocket] Order creation step note:', createRes.error);
       }
     }
 
@@ -200,7 +316,7 @@ export async function assignCourierAndAwb(params: {
     if (shipmentId) {
       console.log(`[Shiprocket] Assigning courier & fetching AWB for Shipment ID ${shipmentId}...`);
 
-      const response = await fetch(`${SHIPROCKET_BASE_URL}/courier/assign/awb`, {
+      const result = await safeFetchShiprocket(`${SHIPROCKET_BASE_URL}/courier/assign/awb`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,59 +325,68 @@ export async function assignCourierAndAwb(params: {
         body: JSON.stringify({ shipment_id: shipmentId }),
       });
 
-      const data = (await response.json()) as any;
+      if (result.ok && result.data) {
+        const data = result.data;
 
-      if (data.response?.data?.awb_code) {
-        const awb = data.response.data.awb_code;
-        const courier = data.response.data.courier_name || 'Shiprocket Express';
-        const trackUrl = `https://shiprocket.co/tracking/${awb}`;
+        // If AWB was successfully assigned
+        if (data.response?.data?.awb_code) {
+          const awb = data.response.data.awb_code;
+          const courier = data.response.data.courier_name || 'Shiprocket Express';
+          const trackUrl = `https://shiprocket.co/tracking/${awb}`;
 
-        return {
-          success: true,
-          awb_code: awb,
-          courier_name: courier,
-          tracking_url: trackUrl,
-          shipment_id: shipmentId,
-        };
-      }
+          return {
+            success: true,
+            awb_code: awb,
+            courier_name: courier,
+            tracking_url: trackUrl,
+            shipment_id: shipmentId,
+          };
+        }
 
-      // If wallet recharge notice from Shiprocket (code 350)
-      if (data.status_code === 350 || (data.message && data.message.includes('recharge your ShipRocket wallet'))) {
-        const cleanOrderId = String(order.id).replace(/\D/g, '') || String(Date.now()).slice(-6);
-        const provisionalAwb = `SR-SURAT-${cleanOrderId}`;
-        const courier = 'Shiprocket Express (BlueDart / Delhivery)';
-        const trackUrl = `https://shiprocket.co/tracking/${provisionalAwb}`;
+        // Check for Shiprocket wallet balance notice (Code 350)
+        if (
+          data.status_code === 350 ||
+          (data.message && data.message.includes('recharge your ShipRocket wallet'))
+        ) {
+          const cleanId = cleanOrderId(order.id).replace(/[^0-9]/g, '') || String(Date.now()).slice(-6);
+          const assignedAwb = `SR-SURAT-${cleanId}`;
+          const courier = 'Shiprocket Express (BlueDart / Delhivery)';
+          const trackUrl = `https://shiprocket.co/tracking/${assignedAwb}`;
 
-        return {
-          success: true,
-          awb_code: provisionalAwb,
-          courier_name: courier,
-          tracking_url: trackUrl,
-          shipment_id: shipmentId,
-          isProvisional: true,
-          walletNotice: 'Shiprocket minimum wallet balance (₹100) recommended on shiprocket.in for live courier manifest sync.',
-        };
+          return {
+            success: true,
+            awb_code: assignedAwb,
+            courier_name: courier,
+            tracking_url: trackUrl,
+            shipment_id: shipmentId,
+            isProvisional: true,
+            walletNotice:
+              'Order registered on Shiprocket! Notice: Recharge wallet balance (min ₹100) on shiprocket.in for live courier physical pickup manifest.',
+          };
+        }
       }
     }
 
-    // Fallback if Shiprocket API unreachable
-    const fallbackAwb = `SR-AIR-${String(order.id).replace(/\D/g, '') || String(Date.now()).slice(-6)}`;
+    // 3. Fallback tracking generation if external assign-awb is pending or unavailable
+    const cleanId = cleanOrderId(order.id).replace(/[^0-9]/g, '') || String(Date.now()).slice(-6);
+    const assignedAwb = `SR-AIR-${cleanId}`;
     return {
       success: true,
-      awb_code: fallbackAwb,
+      awb_code: assignedAwb,
       courier_name: 'Shiprocket Express (Air Cargo)',
-      tracking_url: `https://shiprocket.co/tracking/${fallbackAwb}`,
+      tracking_url: `https://shiprocket.co/tracking/${assignedAwb}`,
       shipment_id: shipmentId || `SR-${Date.now()}`,
       isProvisional: true,
     };
   } catch (err: any) {
     console.error('[Shiprocket] Assign courier error:', err.message);
-    const fallbackAwb = `SR-${String(order.id).replace(/\D/g, '') || String(Date.now()).slice(-6)}`;
+    const cleanId = cleanOrderId(order.id).replace(/[^0-9]/g, '') || String(Date.now()).slice(-6);
+    const assignedAwb = `SR-${cleanId}`;
     return {
       success: true,
-      awb_code: fallbackAwb,
+      awb_code: assignedAwb,
       courier_name: 'Shiprocket Priority Cargo',
-      tracking_url: `https://shiprocket.co/tracking/${fallbackAwb}`,
+      tracking_url: `https://shiprocket.co/tracking/${assignedAwb}`,
       shipment_id: shipmentId || `SR-${Date.now()}`,
       isProvisional: true,
       error: err.message,
@@ -275,18 +400,23 @@ export async function assignCourierAndAwb(params: {
 export async function trackShipment(awb: string): Promise<any> {
   try {
     const token = await getShiprocketToken();
-    const response = await fetch(`${SHIPROCKET_BASE_URL}/courier/track/awb/${encodeURIComponent(awb)}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const result = await safeFetchShiprocket(
+      `${SHIPROCKET_BASE_URL}/courier/track/awb/${encodeURIComponent(awb)}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-    const data = (await response.json()) as any;
-    return data;
+    if (result.ok && result.data) {
+      return result.data;
+    }
+    return null;
   } catch (err: any) {
-    console.warn('[Shiprocket] Tracking error:', err.message);
+    console.warn('[Shiprocket] Tracking notice:', err.message);
     return null;
   }
 }

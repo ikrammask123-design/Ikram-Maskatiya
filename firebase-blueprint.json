@@ -59,12 +59,44 @@
         }
       },
       "required": ["pin"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Customer user profile and saved delivery addresses",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "User identifier matching auth UID"
+        },
+        "name": {
+          "type": "string",
+          "description": "User full name"
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address"
+        },
+        "phone": {
+          "type": "string",
+          "description": "User contact phone number"
+        },
+        "authProvider": {
+          "type": "string",
+          "description": "Authentication provider: google or password"
+        }
+      },
+      "required": ["id", "name"]
     }
   },
   "firestore": {
     "/orders/{orderId}": {
       "schema": "Order",
       "description": "Collection of store orders created during checkout"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user account profiles and saved addresses"
     },
     "/admin_settings/{settingId}": {
       "schema": "AdminSettings",
