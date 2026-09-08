@@ -19,6 +19,7 @@ import {
   ExternalLink,
   Lock,
   AlertCircle,
+  Mail,
 } from 'lucide-react';
 import { CartItem, Currency, StoreOrder, PaymentStatus } from '../types';
 import { formatPrice } from './ProductCard';
@@ -381,6 +382,39 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     );
 
     window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
+  };
+
+  const handleEmailOrder = () => {
+    const subject = encodeURIComponent(`New Zevioza Order Placed - #${orderId} (₹${grandTotal})`);
+    const itemsList = items
+      .map(
+        (i) =>
+          `• ${i.product.name} (Qty: ${i.quantity}${
+            i.selectedColor ? `, Color: ${i.selectedColor}` : ''
+          }${i.selectedSize ? `, Size: ${i.selectedSize}` : ''}) - ₹${
+            (i.product.price + (i.customStitching ? 2500 : 0)) * i.quantity
+          }`
+      )
+      .join('\n');
+
+    const body = encodeURIComponent(
+      `Hello Store Admin,\n\nA new order has been placed on Zevioza Boutique!\n\n` +
+      `Order ID: ${orderId}\n` +
+      `Customer Name: ${shippingInfo.name}\n` +
+      `Customer Phone: ${shippingInfo.phone}\n` +
+      `Customer Email: ${shippingInfo.email}\n` +
+      `Delivery Address: ${shippingInfo.address}, ${shippingInfo.city}, ${shippingInfo.state} - ${shippingInfo.pincode}\n\n` +
+      `Items:\n${itemsList}\n\n` +
+      `Subtotal: ₹${rawSubtotal}\n` +
+      (discountApplied ? `Discount (10%): -₹${discountAmount}\n` : '') +
+      (giftWrap ? `Gift Packaging: +₹500\n` : '') +
+      `Total Amount: ₹${grandTotal}\n` +
+      `Payment Method: ${paymentMethod.toUpperCase()}\n` +
+      (upiUtr.trim() ? `Customer UTR / Ref: ${upiUtr.trim()}\n` : '') +
+      `\nView live on Admin Panel at: ${window.location.origin}/admin\n`
+    );
+
+    window.open(`mailto:ikrammask123@gmail.com?subject=${subject}&body=${body}`, '_blank');
   };
 
   const handleFinishSuccess = () => {
@@ -1013,10 +1047,20 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <button
                 type="button"
                 onClick={handleWhatsAppOrder}
-                className="w-full mb-3 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
+                className="w-full mb-2 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
               >
                 <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Contact Boutique Helpdesk (82380 23498)</span>
+                <span>Notify Boutique on WhatsApp (82380 23498)</span>
+              </button>
+
+              {/* Email Notification to Store Owner */}
+              <button
+                type="button"
+                onClick={handleEmailOrder}
+                className="w-full mb-3 bg-white hover:bg-rose-50 text-[#6d0026] border border-[#debfc2] py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
+              >
+                <Mail className="w-3.5 h-3.5 text-[#6d0026]" />
+                <span>Send Order Email to Owner (ikrammask123@gmail.com)</span>
               </button>
 
               <button

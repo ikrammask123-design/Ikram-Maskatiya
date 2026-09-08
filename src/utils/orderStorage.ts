@@ -1,4 +1,14 @@
 import { StoreOrder, OrderFulfillmentStatus, PaymentStatus } from '../types';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+} from 'firebase/firestore';
 
 const STORAGE_KEY = 'zevioza_store_orders_v1';
 
@@ -48,63 +58,130 @@ export const DEFAULT_ADMIN_PIN = '9825'; // Master PIN: 9825 (or zevioza2026)
 const ADMIN_PIN_KEY = 'zevioza_admin_pin_v1';
 const ADMIN_AUTH_SESSION_KEY = 'zevioza_admin_auth_active';
 
-// Central server order synchronization
-let isSyncingWithServer = false;
-
 const DEMO_ORDER_IDS = new Set(['ZV-928410', 'ZV-849102', 'ZV-729011', 'ZV-610294', 'ZV-501928', 'ZV-TEST01']);
 
+let isSyncingWithServer = false;
+
+/**
+ * Real-time subscription to Firestore orders collection.
+ * Triggers callback immediately whenever any device creates or updates an order.
+ */
+export function subscribeToFirestoreOrders(callback: (orders: StoreOrder[]) => void): () => void {
+  try {
+    const ordersCol = collection(db, 'orders');
+    return onSnapshot(
+      ordersCol,
+      (snapshot) => {
+        const remoteOrders: StoreOrder[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as StoreOrder;
+          if (data && data.id && !data.isDemo && !DEMO_ORDER_IDS.has(data.id)) {
+            remoteOrders.push(data);
+          }
+        });
+
+        // Sort descending by createdAt
+        remoteOrders.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+        // Check if there are local orders not yet on Firestore (upload them automatically)
+        const local = getStoredOrders();
+        const map = new Map<string, StoreOrder>();
+        for (const o of remoteOrders) {
+          map.set(o.id, o);
+        }
+        for (const l of local) {
+          if (!map.has(l.id) && !l.isDemo && !DEMO_ORDER_IDS.has(l.id)) {
+            map.set(l.id, l);
+            // Push missing local order to Firestore in background
+            setDoc(doc(db, 'orders', l.id), l).catch(() => {});
+          }
+        }
+
+        const merged = Array.from(map.values()).sort(
+          (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        );
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        callback(merged);
+      },
+      (err) => {
+        handleFirestoreError(err, OperationType.LIST, 'orders');
+        callback(getStoredOrders());
+      }
+    );
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, 'orders');
+    callback(getStoredOrders());
+    return () => {};
+  }
+}
+
+/**
+ * Synchronize orders with Firebase Firestore and central backend
+ */
 export async function syncOrdersWithServer(): Promise<StoreOrder[]> {
   if (typeof window === 'undefined' || isSyncingWithServer) {
     return getStoredOrders();
   }
   isSyncingWithServer = true;
   try {
-    const res = await fetch('/api/orders');
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && Array.isArray(data.orders)) {
-        const local = getStoredOrders();
-        // Server orders (filter out demo if any)
-        const serverOrders = (data.orders as StoreOrder[]).filter((o) => !o.isDemo && !DEMO_ORDER_IDS.has(o.id));
-        const map = new Map<string, StoreOrder>();
+    // 1. Fetch live orders from Firestore
+    const querySnapshot = await getDocs(collection(db, 'orders'));
+    const firestoreOrders: StoreOrder[] = [];
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data() as StoreOrder;
+      if (data && data.id && !data.isDemo && !DEMO_ORDER_IDS.has(data.id)) {
+        firestoreOrders.push(data);
+      }
+    });
 
-        // Populate server orders
-        for (const o of serverOrders) {
-          map.set(o.id, o);
-        }
+    const local = getStoredOrders();
+    const map = new Map<string, StoreOrder>();
 
-        // Check if there are local orders not yet on server (ONLY real customer orders)
-        const unsyncedLocals = local.filter((o) => !o.isDemo && !DEMO_ORDER_IDS.has(o.id) && !map.has(o.id));
-        if (unsyncedLocals.length > 0) {
-          fetch('/api/orders/bulk-sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orders: unsyncedLocals }),
-          }).catch((e) => console.warn('Bulk sync error', e));
+    for (const o of firestoreOrders) {
+      map.set(o.id, o);
+    }
 
-          for (const u of unsyncedLocals) {
-            map.set(u.id, u);
-          }
-        }
-
-        const merged = Array.from(map.values()).filter((o) => !o.isDemo && !DEMO_ORDER_IDS.has(o.id));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-        window.dispatchEvent(new CustomEvent('zevioza_order_updated', { detail: merged }));
-        return merged;
+    // 2. Check if local has any orders not in Firestore (e.g. from prior checkout session)
+    const unsyncedLocals = local.filter((o) => !o.isDemo && !DEMO_ORDER_IDS.has(o.id) && !map.has(o.id));
+    for (const unsynced of unsyncedLocals) {
+      map.set(unsynced.id, unsynced);
+      try {
+        await setDoc(doc(db, 'orders', unsynced.id), unsynced);
+      } catch (err) {
+        console.warn('Failed to upload unsynced order to Firestore:', err);
       }
     }
+
+    // 3. Fallback sync to express endpoint
+    try {
+      fetch('/api/orders/bulk-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orders: Array.from(map.values()) }),
+      }).catch(() => {});
+    } catch {}
+
+    const merged = Array.from(map.values())
+      .filter((o) => !o.isDemo && !DEMO_ORDER_IDS.has(o.id))
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    window.dispatchEvent(new CustomEvent('zevioza_order_updated', { detail: merged }));
+    return merged;
   } catch (err) {
-    console.warn('Central server sync offline/delayed:', err);
+    console.warn('Firestore sync failed, falling back to local cache:', err);
+    return getStoredOrders();
   } finally {
     isSyncingWithServer = false;
   }
-  return getStoredOrders();
 }
 
 // Auto-trigger sync on initial load and window focus
 if (typeof window !== 'undefined') {
   setTimeout(() => {
     syncOrdersWithServer();
+    syncAdminPinFromCloud();
   }, 100);
 
   window.addEventListener('focus', () => {
@@ -120,7 +197,6 @@ export function getStoredOrders(): StoreOrder[] {
     if (raw !== null) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // Strip out any demo orders automatically
         const realOrders = parsed.filter((o: StoreOrder) => !o.isDemo && !DEMO_ORDER_IDS.has(o.id));
         if (realOrders.length > 0 || demoCleared) {
           return realOrders;
@@ -128,7 +204,6 @@ export function getStoredOrders(): StoreOrder[] {
       }
     }
 
-    // Default to INITIAL_ORDERS (real orders only)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ORDERS));
     return INITIAL_ORDERS;
   } catch (e) {
@@ -155,60 +230,84 @@ export function findOrderForTracking(query: string): StoreOrder | undefined {
   const allOrders = getStoredOrders();
 
   return allOrders.find((order) => {
-    // Exact ID or without "ZV-" prefix
     if (order.id.toUpperCase() === upper) return true;
     if (order.id.replace(/^ZV-?/i, '').toUpperCase() === upper.replace(/^ZV-?/i, '')) return true;
-
-    // Tracking / AWB number
     if (order.trackingNumber && order.trackingNumber.toUpperCase() === upper) return true;
-
-    // Phone number match (last 10 digits or 8 digits)
     if (digitsOnly.length >= 8 && order.customer.phone) {
       const orderPhoneDigits = order.customer.phone.replace(/\D/g, '');
       if (orderPhoneDigits.endsWith(digitsOnly) || digitsOnly.endsWith(orderPhoneDigits)) {
         return true;
       }
     }
-
-    // Email match
     if (cleanQuery.includes('@') && order.customer.email) {
       if (order.customer.email.toLowerCase() === cleanQuery.toLowerCase()) {
         return true;
       }
     }
-
     return false;
   });
 }
 
+export async function findOrderForTrackingAsync(query: string): Promise<StoreOrder | undefined> {
+  const local = findOrderForTracking(query);
+  if (local) return local;
+
+  const cleanQuery = query.trim().toUpperCase();
+  try {
+    const docSnap = await getDoc(doc(db, 'orders', cleanQuery));
+    if (docSnap.exists()) {
+      const order = docSnap.data() as StoreOrder;
+      saveOrderToStore(order);
+      return order;
+    }
+  } catch (e) {
+    handleFirestoreError(e, OperationType.GET, `orders/${cleanQuery}`);
+  }
+
+  try {
+    await syncOrdersWithServer();
+    return findOrderForTracking(query);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Save an order to both Firestore Cloud and local client cache
+ */
 export async function saveOrderToStoreAsync(order: StoreOrder): Promise<void> {
+  const orderWithFlag: StoreOrder = {
+    ...order,
+    isDemo: false,
+  };
+
+  // 1. Instant local storage update
   try {
     const existing = getStoredOrders();
-    const orderWithFlag: StoreOrder = {
-      ...order,
-      isDemo: false,
-    };
     const updated = [orderWithFlag, ...existing.filter((o) => o.id !== order.id)];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     localStorage.setItem(LAST_PLACED_ORDER_KEY, order.id);
     window.dispatchEvent(new CustomEvent('zevioza_order_updated', { detail: orderWithFlag }));
-
-    // Await server registration so order is guaranteed in central database
-    try {
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderWithFlag),
-      });
-      if (res.ok) {
-        console.log(`[Order Central] Successfully registered ${order.id} on server`);
-      }
-    } catch (netErr) {
-      console.warn('Central server async registration error (cached locally):', netErr);
-    }
   } catch (e) {
     console.error('Failed to save order to localStorage', e);
   }
+
+  // 2. Persist to Firestore Live Cloud Database
+  try {
+    await setDoc(doc(db, 'orders', order.id), orderWithFlag);
+    console.log(`[Firestore Live Database] Order ${order.id} committed to cloud!`);
+  } catch (firestoreErr) {
+    handleFirestoreError(firestoreErr, OperationType.WRITE, `orders/${order.id}`);
+  }
+
+  // 3. Central server backup & notify
+  try {
+    fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderWithFlag),
+    }).catch(() => {});
+  } catch {}
 }
 
 export function saveOrderToStore(order: StoreOrder): void {
@@ -223,7 +322,6 @@ export function clearAllDemoOrders(): StoreOrder[] {
     localStorage.setItem(DEMO_CLEARED_KEY, 'true');
     window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
 
-    // Call server to purge demo orders permanently
     fetch('/api/orders/clear-demo', { method: 'POST' }).catch((e) => console.warn('Failed to clear demo orders on server:', e));
 
     return onlyRealOrders;
@@ -263,7 +361,11 @@ export function updateOrderFulfillment(orderId: string, fulfillmentStatus: Order
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
 
-    // Sync update to server
+    // Live Cloud Update
+    setDoc(doc(db, 'orders', orderId), { fulfillmentStatus }, { merge: true }).catch((e) => {
+      handleFirestoreError(e, OperationType.UPDATE, `orders/${orderId}`);
+    });
+
     fetch(`/api/orders/${orderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -279,13 +381,14 @@ export function updateOrderFulfillment(orderId: string, fulfillmentStatus: Order
 
 export function updateOrderPayment(orderId: string, paymentStatus: PaymentStatus, txnId?: string): StoreOrder[] {
   try {
+    const transactionId = txnId || `MANUAL-${Date.now()}`;
     const existing = getStoredOrders();
     const updated = existing.map((o) => {
       if (o.id === orderId) {
         return {
           ...o,
           paymentStatus,
-          transactionId: txnId || o.transactionId || `MANUAL-${Date.now()}`,
+          transactionId: txnId || o.transactionId || transactionId,
         };
       }
       return o;
@@ -293,14 +396,20 @@ export function updateOrderPayment(orderId: string, paymentStatus: PaymentStatus
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
 
-    // Sync payment update to server
+    const payload = {
+      paymentStatus,
+      transactionId,
+    };
+
+    // Live Cloud Update
+    setDoc(doc(db, 'orders', orderId), payload, { merge: true }).catch((e) => {
+      handleFirestoreError(e, OperationType.UPDATE, `orders/${orderId}`);
+    });
+
     fetch(`/api/orders/${orderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        paymentStatus,
-        transactionId: txnId || `MANUAL-${Date.now()}`,
-      }),
+      body: JSON.stringify(payload),
     }).catch((err) => console.warn('Failed to sync payment update to server:', err));
 
     return updated;
@@ -317,7 +426,11 @@ export function updateOrderDetails(orderId: string, updates: Partial<StoreOrder>
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
 
-    // Sync details update to server
+    // Live Cloud Update
+    setDoc(doc(db, 'orders', orderId), updates, { merge: true }).catch((e) => {
+      handleFirestoreError(e, OperationType.UPDATE, `orders/${orderId}`);
+    });
+
     fetch(`/api/orders/${orderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -351,9 +464,7 @@ export function updateOrderCustomer(orderId: string, customerUpdates: Partial<St
 
 export function formatWhatsAppPhone(phone: string): string {
   let clean = phone.replace(/\D/g, '');
-  // Strip any leading zeros
   clean = clean.replace(/^0+/, '');
-  // If 10 digits, prefix Indian international dialing code 91
   if (clean.length === 10) {
     clean = `91${clean}`;
   }
@@ -367,7 +478,11 @@ export function deleteStoredOrder(orderId: string): StoreOrder[] {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
 
-    // Sync delete to server
+    // Live Cloud Delete
+    deleteDoc(doc(db, 'orders', orderId)).catch((e) => {
+      handleFirestoreError(e, OperationType.DELETE, `orders/${orderId}`);
+    });
+
     fetch(`/api/orders/${orderId}`, {
       method: 'DELETE',
     }).catch((err) => console.warn('Failed to sync delete to server:', err));
@@ -381,6 +496,22 @@ export function deleteStoredOrder(orderId: string): StoreOrder[] {
 
 // --- ADMIN SECURITY & AUTHENTICATION METHODS ---
 
+export async function syncAdminPinFromCloud(): Promise<string> {
+  try {
+    const docSnap = await getDoc(doc(db, 'admin_settings', 'security'));
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data && data.pin) {
+        localStorage.setItem(ADMIN_PIN_KEY, data.pin);
+        return data.pin;
+      }
+    }
+  } catch (e) {
+    console.warn('Could not sync admin PIN from cloud:', e);
+  }
+  return getAdminPin();
+}
+
 export function getAdminPin(): string {
   try {
     return localStorage.getItem(ADMIN_PIN_KEY) || DEFAULT_ADMIN_PIN;
@@ -392,7 +523,19 @@ export function getAdminPin(): string {
 export function setAdminPin(newPin: string): boolean {
   try {
     if (!newPin || newPin.trim().length < 4) return false;
-    localStorage.setItem(ADMIN_PIN_KEY, newPin.trim());
+    const cleanPin = newPin.trim();
+    localStorage.setItem(ADMIN_PIN_KEY, cleanPin);
+
+    // Sync to Firestore cloud
+    setDoc(
+      doc(db, 'admin_settings', 'security'),
+      {
+        pin: cleanPin,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    ).catch(() => {});
+
     return true;
   } catch {
     return false;
@@ -402,13 +545,11 @@ export function setAdminPin(newPin: string): boolean {
 export function verifyAdminPin(enteredPin: string): boolean {
   if (!enteredPin) return false;
   const currentPin = getAdminPin();
-  // Allow configured PIN, or fallback master password 'zevioza2026'
   return enteredPin.trim() === currentPin || enteredPin.trim() === 'zevioza2026';
 }
 
 export function isAdminSessionActive(): boolean {
   try {
-    // Check sessionStorage first (temporary tab session) or localStorage (persistent)
     const sessionActive = sessionStorage.getItem(ADMIN_AUTH_SESSION_KEY) === 'true';
     const localActive = localStorage.getItem(ADMIN_AUTH_SESSION_KEY) === 'true';
     return sessionActive || localActive;

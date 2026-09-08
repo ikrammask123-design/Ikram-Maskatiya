@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "Order": {
+      "title": "Order",
+      "description": "Store customer order record",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique order identifier starting with ZV-"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of order creation"
+        },
+        "isDemo": {
+          "type": "boolean",
+          "description": "Flag indicating if order is a test/demo order"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total order amount payable"
+        },
+        "subtotal": {
+          "type": "number",
+          "description": "Subtotal before discounts"
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency code such as INR"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Payment method: cod, upi, or razorpay"
+        },
+        "paymentStatus": {
+          "type": "string",
+          "description": "Status of payment: pending, paid, or refunded"
+        },
+        "fulfillmentStatus": {
+          "type": "string",
+          "description": "Status of fulfillment: new, processing, shipped, delivered, or cancelled"
+        }
+      },
+      "required": ["id", "createdAt", "total", "paymentMethod", "paymentStatus", "fulfillmentStatus"]
+    },
+    "AdminSettings": {
+      "title": "AdminSettings",
+      "description": "Store administration configuration",
+      "type": "object",
+      "properties": {
+        "pin": {
+          "type": "string",
+          "description": "Admin master pin"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of last update"
+        }
+      },
+      "required": ["pin"]
+    }
+  },
+  "firestore": {
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Collection of store orders created during checkout"
+    },
+    "/admin_settings/{settingId}": {
+      "schema": "AdminSettings",
+      "description": "Collection of admin security settings"
+    }
+  }
+}

@@ -38,7 +38,11 @@ export default function App() {
     const checkPrivateAdminRoute = () => {
       const searchParams = new URLSearchParams(window.location.search);
       const hash = window.location.hash.toLowerCase();
+      const pathname = window.location.pathname.toLowerCase();
       if (
+        pathname === '/admin' ||
+        pathname === '/admin/' ||
+        pathname.startsWith('/admin') ||
         searchParams.get('admin') === 'true' ||
         searchParams.get('owner') === 'true' ||
         searchParams.get('admin') === '9825' ||
@@ -64,6 +68,7 @@ export default function App() {
 
     checkPrivateAdminRoute();
     window.addEventListener('hashchange', checkPrivateAdminRoute);
+    window.addEventListener('popstate', checkPrivateAdminRoute);
 
     const handleAdminKeyCombo = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
@@ -80,6 +85,13 @@ export default function App() {
   }, []);
 
   const handleBackToStore = () => {
+    if (window.location.pathname.toLowerCase().startsWith('/admin')) {
+      try {
+        window.history.pushState(null, '', '/');
+      } catch {
+        // ignore if iframe security restriction
+      }
+    }
     if (window.location.hash === '#admin' || window.location.hash === '#owner') {
       try {
         window.history.replaceState(null, '', window.location.pathname);

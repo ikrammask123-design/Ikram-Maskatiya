@@ -19,7 +19,13 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { StoreOrder, Currency } from '../types';
-import { findOrderForTracking, getLastPlacedOrderId, getStoredOrders, saveOrderToStore } from '../utils/orderStorage';
+import {
+  findOrderForTracking,
+  findOrderForTrackingAsync,
+  getLastPlacedOrderId,
+  getStoredOrders,
+  saveOrderToStore,
+} from '../utils/orderStorage';
 import { formatPrice } from './ProductCard';
 
 interface TrackOrderModalProps {
@@ -95,7 +101,7 @@ export const TrackOrderModal: React.FC<TrackOrderModalProps> = ({
     if (!query) return;
 
     setIsSearching(true);
-    let found = findOrderForTracking(query);
+    let found = await findOrderForTrackingAsync(query);
     if (!found) {
       try {
         const res = await fetch(`/api/orders/track?q=${encodeURIComponent(query)}`);

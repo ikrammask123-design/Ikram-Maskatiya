@@ -41,11 +41,14 @@ import {
   Send,
   User,
   Copy,
+  Mail,
+  Database,
 } from 'lucide-react';
 import { StoreOrder, OrderFulfillmentStatus, PaymentStatus, Currency } from '../types';
 import {
   getStoredOrders,
   syncOrdersWithServer,
+  subscribeToFirestoreOrders,
   updateOrderFulfillment,
   updateOrderPayment,
   updateOrderDetails,
@@ -168,6 +171,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
     }
   };
 
+  const [isCloudLive, setIsCloudLive] = useState(true);
+
   useEffect(() => {
     loadOrders();
 
@@ -177,20 +182,53 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
 
     window.addEventListener('zevioza_order_updated', handleOrderUpdate);
 
-    // Auto-poll central server every 6 seconds so incoming orders from customers/friends appear live
+    // Live Firebase Firestore Real-Time Listener
+    const unsubscribeFirestore = subscribeToFirestoreOrders((liveOrders) => {
+      if (liveOrders) {
+        setOrders(liveOrders);
+        setIsCloudLive(true);
+      }
+    });
+
+    // Periodic cloud reconciliation fallback
     const pollTimer = setInterval(() => {
       syncOrdersWithServer().then((latest) => {
         if (latest && latest.length > 0) {
           setOrders(latest);
         }
       });
-    }, 6000);
+    }, 8000);
 
     return () => {
+      unsubscribeFirestore();
       clearInterval(pollTimer);
       window.removeEventListener('zevioza_order_updated', handleOrderUpdate);
     };
   }, []);
+
+  const handleEmailOrderInvoice = (order: StoreOrder) => {
+    const subject = encodeURIComponent(`[Order #${order.id}] Zevioza Boutique Order Summary - ₹${order.total}`);
+    const itemsList = order.items
+      .map((i) => `• ${i.name} (Qty: ${i.quantity}${i.selectedColor ? `, Color: ${i.selectedColor}` : ''}${i.selectedSize ? `, Size: ${i.selectedSize}` : ''}) - ₹${i.price * i.quantity}`)
+      .join('\n');
+
+    const body = encodeURIComponent(
+      `Order Details - Zevioza Boutique\n\n` +
+      `Order ID: ${order.id}\n` +
+      `Date: ${new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}\n` +
+      `Fulfillment: ${order.fulfillmentStatus.toUpperCase()}\n` +
+      `Payment: ${order.paymentStatus.toUpperCase()} (${order.paymentMethod.toUpperCase()})\n` +
+      (order.transactionId ? `Transaction Ref: ${order.transactionId}\n` : '') +
+      (order.trackingNumber ? `Tracking: ${order.courierPartner || 'Express'} - ${order.trackingNumber}\n` : '') +
+      `\nCustomer:\n${order.customer.name}\n${order.customer.phone}\n${order.customer.address}, ${order.customer.city} - ${order.customer.pincode}\n\n` +
+      `Items:\n${itemsList}\n\n` +
+      `Total: ₹${order.total}\n\n` +
+      `Boutique Support: +91 82380 23498 | Email: ${OWNER_EMAIL}\n`
+    );
+
+    const recipient = order.customer.email ? `${order.customer.email},${OWNER_EMAIL}` : OWNER_EMAIL;
+    window.open(`mailto:${recipient}?subject=${subject}&body=${body}`, '_blank');
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -769,6 +807,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Firebase Live Cloud Database Indicator */}
+            <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-2xs">
+              <Database className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+              <span className="hidden sm:inline">Firebase Live Cloud</span>
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+            </div>
+
             {/* Owner Email Badge */}
             <div className="hidden lg:flex items-center gap-2 bg-[#f6f3f2] px-3 py-1.5 rounded-xl border border-[#debfc2]/60 text-xs text-[#574144]">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -1194,6 +1239,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                           >
                             <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
                             <span>Send Msg to Customer</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleEmailOrderInvoice(order)}
+                            className="flex items-center gap-1 text-[11px] font-medium text-[#6d0026] hover:text-[#8e1b3b] bg-rose-50 hover:bg-rose-100 border border-[#debfc2] px-2.5 py-1.5 rounded-lg transition-all shadow-2xs cursor-pointer"
+                            title="Email order summary to owner & customer"
+                          >
+                            <Mail className="w-3 h-3 text-[#6d0026]" />
+                            <span>Email Order</span>
                           </button>
 
                           <button
