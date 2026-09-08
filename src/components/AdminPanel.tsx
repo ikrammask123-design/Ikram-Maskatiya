@@ -305,6 +305,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
     const updated = updateOrderFulfillment(orderId, status);
     setOrders(updated);
     showToast(`Order #${orderId} status changed to ${status.toUpperCase()}`);
+
+    // If marked as shipped and no tracking AWB exists yet, auto-trigger Shiprocket dispatch
+    if (status === 'shipped') {
+      const targetOrder = orders.find((o) => o.id === orderId);
+      if (targetOrder && !targetOrder.trackingNumber) {
+        handleShipWithShiprocket(targetOrder);
+      }
+    }
   };
 
   const handleTogglePayment = (orderId: string, currentStatus: PaymentStatus) => {
@@ -1432,15 +1440,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                                 {shippingOrderId === order.id ? (
                                   <div className="flex items-center gap-2">
                                     <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                    <span>Creating Shipment on Shiprocket & Fetching AWB...</span>
+                                    <span>Dispatching via Shiprocket & Generating AWB...</span>
                                   </div>
                                 ) : (
                                   <>
                                     <Truck className="w-4 h-4" />
                                     <span>
                                       {order.trackingNumber
-                                        ? '🔄 Generate AWB / Re-sync (Shiprocket)'
-                                        : '🚀 Ship via Shiprocket / Generate AWB'}
+                                        ? '🔄 Re-sync AWB (Shiprocket)'
+                                        : '🚀 Dispatch Order & Generate AWB'}
                                     </span>
                                   </>
                                 )}
