@@ -1115,7 +1115,7 @@ export const INITIAL_NOTIFICATIONS = [
   {
     id: 'n-3',
     title: 'VIP Boutique Invitation',
-    message: 'Private one-on-one styling with master draping consultants this weekend in Mumbai & Delhi salons.',
+    message: 'Private one-on-one styling with master draping consultants this weekend in Surat flagship salon.',
     time: 'Yesterday',
     type: 'invitation' as const,
     read: true,

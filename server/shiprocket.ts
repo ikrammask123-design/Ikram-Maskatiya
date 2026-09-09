@@ -1,5 +1,4 @@
-import fetch from 'node-fetch';
-
+// Node 18+ includes native global fetch
 const SHIPROCKET_EMAIL = process.env.SHIPROCKET_EMAIL || 'alexmask09@gmail.com';
 const SHIPROCKET_PASSWORD = process.env.SHIPROCKET_PASSWORD || 'J!7a5PDntKR#mSiO!9dC^T0%C!43zd5j';
 const SHIPROCKET_BASE_URL = 'https://apiv2.shiprocket.in/v1/external';

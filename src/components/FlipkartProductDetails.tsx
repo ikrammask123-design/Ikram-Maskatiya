@@ -218,7 +218,7 @@ export const FlipkartProductDetails: React.FC<FlipkartProductDetailsProps> = ({ 
                 </div>
                 <div className="py-2.5 grid grid-cols-12 gap-2">
                   <span className="col-span-5 text-neutral-500">Customer Support</span>
-                  <span className="col-span-7 text-[#111827] font-medium">contact@zevioza.com | Toll-Free: 1800-ZEVIOZA</span>
+                  <span className="col-span-7 text-[#111827] font-medium">zevioza27@gmail.com | Toll-Free: 1800-ZEVIOZA</span>
                 </div>
               </div>
             </div>

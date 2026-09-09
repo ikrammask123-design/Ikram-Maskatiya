@@ -78,7 +78,7 @@ export const StylistModal: React.FC<StylistModalProps> = ({ isOpen, onClose }) =
                     }`}
                   >
                     <MapPin className="w-4 h-4" />
-                    <span>Mumbai / Delhi Salon</span>
+                    <span>Surat Atelier Salon</span>
                   </button>
                 </div>
               </div>

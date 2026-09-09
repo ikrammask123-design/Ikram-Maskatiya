@@ -1618,9 +1618,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                   <Logo size="md" />
                   <p className="text-xs text-[#574144] mt-2 font-medium">Zevioza Couture & Atelier</p>
                   <p className="text-[11px] text-[#8a7174]">
-                    GSTIN: 24AABCS1429E1Z4 • support@zevioza.in
+                    GSTIN: 24AABCS1429E1Z4 • zevioza27@gmail.com
                   </p>
-                  <p className="text-[11px] text-[#8a7174]">Surat & Mumbai Heritage Salons</p>
+                  <p className="text-[11px] text-[#8a7174]">Surat Flagship Atelier & Salon</p>
                 </div>
                 <div className="text-right">
                   <span className="font-display text-lg font-bold text-[#6d0026] block">

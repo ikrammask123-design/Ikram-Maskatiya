@@ -743,7 +743,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
                 >
                   <div className="flex gap-4 items-center">
                     <img
-                      src={firstItem?.image || '/logo.svg'}
+                      src={firstItem?.image || '/Gemini_Generated_Image_j96aohj96aohj96a-removebg-preview.png'}
                       alt={firstItem?.name || 'Package'}
                       className="w-16 h-20 object-cover rounded-xl bg-[#f6f3f2] border border-[#debfc2]/30 shrink-0"
                     />

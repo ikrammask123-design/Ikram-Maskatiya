@@ -330,7 +330,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           currency: currency === 'INR' ? 'INR' : currency,
           name: 'Zevioza Boutique',
           description: `Boutique Order - ${newId}`,
-          image: '/logo.svg',
+          image: '/Gemini_Generated_Image_j96aohj96aohj96a-removebg-preview.png',
           handler: async function (response: any) {
             if (response?.razorpay_payment_id) {
               setOrderId(newId);

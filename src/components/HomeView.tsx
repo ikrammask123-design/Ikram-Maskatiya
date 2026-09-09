@@ -227,7 +227,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               Premium ethnic & contemporary fashion crafted for the modern woman.
             </p>
             <p className="text-xs text-[#8a7174]">
-              Mumbai • New Delhi • Bengaluru • Dubai
+              Surat, Gujarat, India
             </p>
           </div>
 
@@ -319,8 +319,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <ul className="text-xs sm:text-sm flex flex-col gap-3">
               <li className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-[#6d0026] flex-shrink-0" />
-                <a href="mailto:care@zevioza.com" className="hover:text-[#6d0026]">
-                  care@zevioza.com
+                <a href="mailto:zevioza27@gmail.com" className="hover:text-[#6d0026]">
+                  zevioza27@gmail.com
                 </a>
               </li>
               <li className="flex items-center gap-2.5">
@@ -342,7 +342,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </li>
               <li className="flex items-center gap-2.5">
                 <MapPin className="w-4 h-4 text-[#6d0026] flex-shrink-0" />
-                <span>Mumbai, India</span>
+                <span>Surat, Gujarat, India</span>
               </li>
             </ul>
           </div>
