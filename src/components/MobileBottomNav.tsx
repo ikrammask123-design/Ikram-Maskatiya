@@ -46,7 +46,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       <button
         id="btn-nav-categories"
         onClick={() => setActiveTab('categories')}
-        className={`flex flex-col items-center justify-center transition-all duration-200 px-3 py-1 rounded-full ${
+        className={`flex flex-col items-center justify-center transition-all duration-200 px-2.5 py-1 rounded-full ${
           activeTab === 'categories'
             ? 'text-[#6d0026] bg-[#fed9e2]/60 font-semibold scale-100 shadow-xs'
             : 'text-[#574144] hover:bg-[#f6f3f2]'
@@ -61,6 +61,32 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           grid_view
         </span>
         <span className="font-body text-[11px] tracking-tight">Categories</span>
+      </button>
+
+      {/* Tab: K-Store (Flipkart-style K-Store Highlight) */}
+      <button
+        id="btn-nav-korean"
+        onClick={() => setActiveTab('korean-store')}
+        className={`flex flex-col items-center justify-center transition-all duration-200 px-2.5 py-1 rounded-full relative ${
+          activeTab === 'korean-store'
+            ? 'text-[#db2777] bg-[#fce7f3] font-bold scale-100 shadow-xs ring-1 ring-[#f472b6]/40'
+            : 'text-[#db2777]/80 hover:bg-[#fdf2f8]'
+        }`}
+      >
+        <div className="relative">
+          <span
+            className="material-symbols-outlined text-2xl mb-0.5 text-[#db2777]"
+            style={{
+              fontVariationSettings: activeTab === 'korean-store' ? "'FILL' 1" : "'FILL' 0",
+            }}
+          >
+            auto_awesome
+          </span>
+          <span className="absolute -top-1 -right-2 text-[8px] bg-gradient-to-r from-[#ec4899] to-[#8b5cf6] text-white font-extrabold px-1 rounded-full leading-none py-0.5 shadow-2xs">
+            HOT
+          </span>
+        </div>
+        <span className="font-body text-[10px] font-bold tracking-tight text-[#db2777]">K-Store</span>
       </button>
 
       {/* Tab: Alerts */}

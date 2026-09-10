@@ -305,6 +305,22 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="w-1.5 h-1.5 rounded-full bg-[#aa314e] animate-ping"></span>
             New Arrivals
           </button>
+          {/* Korean Store Tab (Flipkart Inspired Gen-Z Section) */}
+          <button
+            id="btn-nav-korean-store"
+            onClick={() => handleNavClick('korean-store')}
+            className={`text-[11px] tracking-[0.12em] uppercase font-bold transition-all px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs ${
+              activeTab === 'korean-store'
+                ? 'bg-gradient-to-r from-[#ec4899] via-[#d946ef] to-[#8b5cf6] text-white shadow-sm ring-2 ring-[#f472b6]/40'
+                : 'bg-gradient-to-r from-[#fdf2f8] to-[#f3e8ff] text-[#db2777] hover:text-[#9333ea] border border-[#fbcfe8] hover:border-[#f472b6]'
+            }`}
+          >
+            <Sparkles className="w-3 h-3 text-[#eab308] fill-[#eab308]" />
+            <span>K-Aesthetic Store</span>
+            <span className="text-[9px] bg-white text-[#db2777] font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs">
+              HOT
+            </span>
+          </button>
         </div>
       </header>
 
@@ -333,6 +349,25 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             <div className="py-6 flex flex-col gap-4">
+              {/* Highlighted Korean Store Banner Item */}
+              <button
+                onClick={() => handleNavClick('korean-store')}
+                className="text-left p-3.5 rounded-2xl bg-gradient-to-r from-[#fdf2f8] via-[#fce7f3] to-[#f3e8ff] border border-[#fbcfe8] shadow-xs flex items-center justify-between transition-transform active:scale-98"
+              >
+                <div>
+                  <div className="flex items-center gap-1.5 text-xs font-black text-[#db2777] tracking-wider uppercase">
+                    <Sparkles className="w-3.5 h-3.5 fill-[#db2777]" />
+                    <span>Korean Store (K-Aesthetic)</span>
+                  </div>
+                  <span className="text-[11px] text-[#7c3aed] font-medium block mt-0.5">
+                    K-Drama Fits, Bow Bags & Kurtis @ ₹149
+                  </span>
+                </div>
+                <span className="bg-[#db2777] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-2xs">
+                  NEW
+                </span>
+              </button>
+
               <button
                 onClick={() => handleNavClick('home', 'all')}
                 className="text-left font-display text-lg text-[#1c1b1b] hover:text-[#6d0026] py-1 font-semibold"

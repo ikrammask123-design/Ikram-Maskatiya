@@ -20,6 +20,7 @@ interface HomeViewProps {
   onAddToCart: (product: Product) => void;
   onOpenStylistModal: () => void;
   onOpenTrackOrder?: () => void;
+  onOpenKoreanStore?: () => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -32,6 +33,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onAddToCart,
   onOpenStylistModal,
   onOpenTrackOrder,
+  onOpenKoreanStore,
 }) => {
   const [secretTapCount, setSecretTapCount] = React.useState(0);
 
@@ -62,6 +64,82 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
       {/* 3. Value Proposition / Trust Badges Bar */}
       <TrustBadges />
+
+      {/* 3.5. 100% FEMALE-FOCUSED KOREAN STORE FEATURE BANNER */}
+      {onOpenKoreanStore && (
+        <section className="px-4 sm:px-8 max-w-[1360px] mx-auto w-full pt-4 pb-2">
+          <div
+            onClick={onOpenKoreanStore}
+            className="group relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#FFF5F7] via-[#FFFDF9] to-[#F3EEFF] border-2 border-[#FFCCD5] hover:border-[#FF4D6D] p-6 sm:p-8 cursor-pointer shadow-md hover:shadow-xl transition-all duration-300"
+            style={{
+              backgroundImage: `radial-gradient(#FFCCD5 0.75px, transparent 0.75px)`,
+              backgroundSize: '14px 14px',
+            }}
+          >
+            {/* Soft decorative glow */}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-[#FFB6C1]/30 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute bottom-0 left-10 w-60 h-60 bg-[#D1FAE5]/30 rounded-full blur-2xl pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="max-w-xl text-center md:text-left">
+                <div className="inline-flex items-center gap-2 bg-white/95 backdrop-blur-xs px-3.5 py-1 rounded-full border border-[#FFCCD5] text-[11px] font-bold text-[#E11D48] shadow-2xs mb-2.5">
+                  <Sparkles className="w-3.5 h-3.5 fill-[#FF4D6D] text-[#FF4D6D]" />
+                  <span>100% FEMALE FOCUSED • KOREAN AESTHETIC</span>
+                  <span className="text-[#7C3AED]">한국 소녀</span>
+                </div>
+                <h3 className="font-display text-2xl sm:text-3xl lg:text-4xl font-black text-[#1C1B1B] tracking-tight">
+                  Step Into The <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D6D] via-[#D946EF] to-[#7C3AED]">Korean Aesthetic Store</span>
+                </h3>
+                <p className="mt-2 text-xs sm:text-sm text-[#574144] leading-relaxed">
+                  Trending K-Drama Romance Maxi Dresses, Minimalist Solid Kurtis, Y2K Pleats & Cute Bow Bags starting from <span className="font-bold text-[#FF4D6D]">₹39</span>.
+                </p>
+
+                {/* Quick pill tags */}
+                <div className="mt-4 flex flex-wrap items-center justify-center md:justify-start gap-2">
+                  <span className="bg-white px-2.5 py-1 rounded-xl text-xs font-semibold text-[#9F1239] border border-[#FFCCD5]">
+                    ♡ K-Drama Romance From ₹199
+                  </span>
+                  <span className="bg-white px-2.5 py-1 rounded-xl text-xs font-semibold text-[#065F46] border border-[#A7F3D0]">
+                    🍃 Clean Solid Kurtis Min. 60% Off
+                  </span>
+                  <span className="bg-white px-2.5 py-1 rounded-xl text-xs font-semibold text-[#6D28D9] border border-[#DDD6FE]">
+                    🎀 Bow Bags & Earrings From ₹39
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Button & Visual Previews */}
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <div className="hidden lg:flex items-center -space-x-4">
+                  <img
+                    src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=150&q=80"
+                    alt="K-Romance Female Model"
+                    className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-md"
+                  />
+                  <img
+                    src="https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=150&q=80"
+                    alt="Bow Bag"
+                    className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-md"
+                  />
+                  <img
+                    src="/HOUSE OF SETHIA White -1.webp"
+                    alt="Minimalist Kurti"
+                    className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-md"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#FF4D6D] via-[#E11D48] to-[#BE123C] text-white text-xs sm:text-sm font-bold tracking-wider uppercase shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all duration-300 flex items-center gap-2 shrink-0"
+                >
+                  <span>Explore K-Store</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 4. MOST LOVED -> Trending Now Section */}
       <section

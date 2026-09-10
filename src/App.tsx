@@ -12,8 +12,12 @@ import { SearchModal } from './components/SearchModal';
 import { StylistModal } from './components/StylistModal';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { TrackOrderModal } from './components/TrackOrderModal';
+import { KoreanStoreView } from './components/KoreanStoreView';
 import { CategoryId, Product, CartItem, Currency, NotificationItem } from './types';
 import { PRODUCTS, INITIAL_NOTIFICATIONS } from './data/products';
+import { K_PRODUCTS } from './data/koreanStoreData';
+
+const ALL_PRODUCTS = [...PRODUCTS, ...K_PRODUCTS];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -52,6 +56,23 @@ export default function App() {
         hash === '#portal'
       ) {
         setActiveTab('admin');
+      } else if (
+        pathname === '/korean' ||
+        pathname === '/korean-store' ||
+        pathname === '/k-aesthetic' ||
+        searchParams.get('store') === 'korean' ||
+        searchParams.get('korean') === 'true' ||
+        hash === '#korean' ||
+        hash === '#korean-store'
+      ) {
+        setActiveTab('korean-store');
+      } else if (hash.startsWith('#korean-')) {
+        const prodId = hash.replace('#korean-', '');
+        const found = K_PRODUCTS.find((p) => p.id === prodId || p.id === `k-${prodId}`);
+        if (found) {
+          setSelectedProductModal(found);
+          setActiveTab('korean-store');
+        }
       }
       const trackParam = searchParams.get('track') || searchParams.get('order');
       if (trackParam) {
@@ -249,7 +270,7 @@ export default function App() {
 
   const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const unreadAlertsCount = notifications.filter((n) => !n.read).length;
-  const wishlistedProducts = PRODUCTS.filter((p) => wishlistIds.includes(p.id));
+  const wishlistedProducts = ALL_PRODUCTS.filter((p) => wishlistIds.includes(p.id));
 
   return (
     <div className="min-h-screen bg-[#fcf9f8] text-[#1c1b1b] font-body flex flex-col antialiased">
@@ -273,7 +294,7 @@ export default function App() {
       <main className="flex-1 w-full pt-16 sm:pt-[108px] pb-20 md:pb-0">
         {activeTab === 'home' && (
           <HomeView
-            products={PRODUCTS}
+            products={ALL_PRODUCTS}
             currency={currency}
             wishlistIds={wishlistIds}
             onSelectCategory={handleSelectCategory}
@@ -282,12 +303,25 @@ export default function App() {
             onAddToCart={(p) => handleAddToCart(p)}
             onOpenStylistModal={() => setIsStylistModalOpen(true)}
             onOpenTrackOrder={handleOpenTrackOrder}
+            onOpenKoreanStore={() => setActiveTab('korean-store')}
+          />
+        )}
+
+        {activeTab === 'korean-store' && (
+          <KoreanStoreView
+            currency={currency}
+            wishlistIds={wishlistIds}
+            onToggleWishlist={handleToggleWishlist}
+            onSelectProduct={(p) => setSelectedProductModal(p)}
+            onAddToCart={(p) => handleAddToCart(p)}
+            onBuyNow={(p) => handleBuyNow(p)}
+            onBackToStore={() => setActiveTab('home')}
           />
         )}
 
         {activeTab === 'categories' && (
           <CategoryView
-            products={PRODUCTS}
+            products={ALL_PRODUCTS}
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
             currency={currency}
@@ -379,7 +413,7 @@ export default function App() {
       <SearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
-        products={PRODUCTS}
+        products={ALL_PRODUCTS}
         currency={currency}
         onSelectProduct={(p) => setSelectedProductModal(p)}
         onAddToCart={(p) => handleAddToCart(p)}
