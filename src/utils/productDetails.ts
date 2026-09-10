@@ -88,6 +88,14 @@ export function extractProductDetails(product: Product): ProductDetailsData {
       ? 'HITKCREATION'
       : product.name.includes('ZIBLON')
       ? 'ZIBLON'
+      : product.name.includes('Sixsigma')
+      ? 'Sixsigma'
+      : product.name.includes('Sandykart')
+      ? 'Sandykart'
+      : product.name.includes('BHOJALCREATION')
+      ? 'BHOJALCREATION'
+      : product.name.includes('Kedar Fab')
+      ? 'Kedar Fab'
       : 'Zevioza Heritage');
 
   // Derive Package Contains / Sales Package
@@ -251,7 +259,47 @@ export function extractProductDetails(product: Product): ProductDetailsData {
   ];
 
   // Compile general specifications array matching Flipkart's clean 2-column key-value structure
-  const generalSpecs: ProductSpecItem[] = [
+  const generalSpecs: ProductSpecItem[] = [];
+
+  // If specific lehenga specs are defined, place them first
+  if (product.lehengaFabric || product.specs?.['Lehenga Fabric']) {
+    generalSpecs.push({
+      label: 'Lehenga Fabric',
+      value: product.lehengaFabric || product.specs?.['Lehenga Fabric'] || '',
+    });
+  }
+  if (product.choliFabric || product.specs?.['Choli Fabric']) {
+    generalSpecs.push({
+      label: 'Choli Fabric',
+      value: product.choliFabric || product.specs?.['Choli Fabric'] || '',
+    });
+  }
+  if (product.dupattaFabric || product.specs?.['Dupatta Fabric']) {
+    generalSpecs.push({
+      label: 'Dupatta Fabric',
+      value: product.dupattaFabric || product.specs?.['Dupatta Fabric'] || '',
+    });
+  }
+  if (product.stitchingType || product.specs?.['Stitching Type']) {
+    generalSpecs.push({
+      label: 'Stitching Type',
+      value: product.stitchingType || product.specs?.['Stitching Type'] || '',
+    });
+  }
+  if (product.pattern || product.specs?.['Pattern']) {
+    generalSpecs.push({
+      label: 'Pattern',
+      value: product.pattern || product.specs?.['Pattern'] || pattern,
+    });
+  }
+  if (product.salesPackage || product.specs?.['Sales Package']) {
+    generalSpecs.push({
+      label: 'Sales Package',
+      value: product.salesPackage || product.specs?.['Sales Package'] || packageContains,
+    });
+  }
+
+  generalSpecs.push(
     { label: 'Package contains', value: packageContains },
     { label: 'Brand', value: brand },
     { label: 'Ideal For', value: idealFor },
@@ -262,7 +310,7 @@ export function extractProductDetails(product: Product): ProductDetailsData {
     { label: 'Type', value: type },
     { label: 'Fabric', value: fabric },
     { label: 'Fit', value: fit },
-  ];
+  );
 
   if (neck && neck !== 'NA') {
     generalSpecs.push({ label: 'Neck', value: neck });

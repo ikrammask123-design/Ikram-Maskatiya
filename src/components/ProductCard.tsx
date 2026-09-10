@@ -97,7 +97,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <img
           key={cardImage}
           src={cardImage}
-          alt={product.name}
+          alt={product.title || product.name}
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (target.src.endsWith('.jpg')) {
+              target.src = target.src.replace('.jpg', '.webp');
+            }
+          }}
           className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-106 animate-fadeIn"
           loading="lazy"
         />
@@ -188,7 +194,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Product Title */}
           <h3 className="font-display text-base font-bold text-[#1c1b1b] group-hover:text-[#6d0026] transition-colors leading-snug line-clamp-1 mb-1">
-            {product.name}
+            {product.title || product.name}
           </h3>
 
           {/* Subtitle / Craft detail */}
@@ -196,34 +202,56 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {product.fabric || 'Premium handcrafted piece'}
           </p>
 
-          {/* Interactive Color Swatches if multi-color */}
-          {product.availableColors && product.availableColors.length > 1 && (
-            <div className="flex items-center gap-1.5 mb-2.5 py-0.5">
-              <span className="text-[10px] text-[#8a7174] font-medium mr-0.5">Shades:</span>
-              <div className="flex items-center gap-1.5 overflow-x-hidden">
-                {product.availableColors.slice(0, 5).map((col) => {
+          {/* Size Info Badge / Pills */}
+          {product.sizes && product.sizes.length > 0 && (
+            <div className="flex items-center gap-1.5 mb-2 text-xs">
+              <span className="text-[10px] font-semibold text-[#8a7174] uppercase tracking-wider">Size:</span>
+              <div className="flex flex-wrap gap-1">
+                {product.sizes.map((sz) => (
+                  <span
+                    key={sz}
+                    className="px-1.5 py-0.5 rounded bg-[#f6f3f2] text-[10px] font-bold text-[#6d0026] border border-[#debfc2]/50"
+                  >
+                    {sz}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Color Option Display & Interactive Swatches */}
+          {((product.availableColors && product.availableColors.length > 0) || (product.colors && product.colors.length > 0) || product.color) && (
+            <div className="flex items-center gap-1.5 mb-2 py-0.5 flex-wrap">
+              <span className="text-[10px] font-semibold text-[#8a7174] uppercase tracking-wider">Color:</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {(product.availableColors && product.availableColors.length > 0
+                  ? product.availableColors
+                  : product.colors && product.colors.length > 0
+                  ? product.colors
+                  : [product.color || 'White']
+                ).map((col) => {
                   const isCurrent = activeColor === col;
                   const hex = getColorHex(col);
                   return (
                     <button
                       key={col}
                       type="button"
-                      title={`View ${col}`}
+                      title={`Select ${col}`}
                       onClick={(e) => handleSelectColor(col, e)}
-                      className={`w-3.5 h-3.5 rounded-full border transition-all cursor-pointer ${
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-all cursor-pointer ${
                         isCurrent
-                          ? 'border-[#6d0026] scale-125 ring-2 ring-[#6d0026]/30 shadow-xs'
-                          : 'border-black/20 hover:scale-115 opacity-80 hover:opacity-100'
+                          ? 'border-[#6d0026] bg-[#ffd9dd]/40 text-[#6d0026] shadow-2xs ring-1 ring-[#6d0026]/30'
+                          : 'border-[#debfc2] bg-[#fffbfb] text-[#574144] hover:border-[#6d0026] hover:bg-white'
                       }`}
-                      style={{ backgroundColor: hex }}
-                    />
+                    >
+                      <span
+                        className="w-2.5 h-2.5 rounded-full border border-black/25 shrink-0 shadow-2xs"
+                        style={{ backgroundColor: hex }}
+                      />
+                      <span>{col}</span>
+                    </button>
                   );
                 })}
-                {product.availableColors.length > 5 && (
-                  <span className="text-[10px] text-[#8a7174] font-semibold">
-                    +{product.availableColors.length - 5}
-                  </span>
-                )}
               </div>
             </div>
           )}

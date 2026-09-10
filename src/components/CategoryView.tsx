@@ -39,17 +39,23 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
   const filteredProducts = useMemo(() => {
     return products
       .filter((p) => {
-        if (selectedCategory !== 'all' && p.category !== selectedCategory) {
-          return false;
+        if (selectedCategory !== 'all') {
+          if (selectedCategory === 'lehenga-choli') {
+            if (p.category !== 'lehenga-choli' && p.category !== 'Lehenga Choli') {
+              return false;
+            }
+          } else if (p.category !== selectedCategory) {
+            return false;
+          }
         }
         if (selectedFabric !== 'all' && p.fabric !== selectedFabric) {
           return false;
         }
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
-          const matchesName = p.name.toLowerCase().includes(q);
-          const matchesFabric = p.fabric.toLowerCase().includes(q);
-          const matchesDesc = p.description.toLowerCase().includes(q);
+          const matchesName = (p.name || p.title || '').toLowerCase().includes(q);
+          const matchesFabric = (p.fabric || '').toLowerCase().includes(q);
+          const matchesDesc = (p.description || '').toLowerCase().includes(q);
           const matchesWeave = p.weave ? p.weave.toLowerCase().includes(q) : false;
           return matchesName || matchesFabric || matchesDesc || matchesWeave;
         }
@@ -65,6 +71,7 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
 
   const categories: { id: CategoryId; label: string }[] = [
     { id: 'all', label: 'All Creations' },
+    { id: 'lehenga-choli', label: 'Lehenga Choli' },
     { id: 'sarees', label: 'Silk Sarees' },
     { id: 'kurtis', label: 'Kurtis' },
     { id: 'dresses', label: 'Dresses' },
@@ -81,6 +88,8 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
         <h2 className="font-display text-3xl md:text-4xl font-bold text-[#6d0026] mb-3">
           {selectedCategory === 'all'
             ? 'The Complete Collection'
+            : selectedCategory === 'lehenga-choli'
+            ? 'Lehenga Choli Collection'
             : selectedCategory === 'sarees'
             ? 'Pure Silk & Heirloom Sarees'
             : selectedCategory === 'kurtis'
@@ -90,7 +99,9 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
             : 'Fine Kundan & Temple Accessories'}
         </h2>
         <p className="font-body text-sm md:text-base text-[#574144]">
-          Handcrafted by generational artisans with pure natural fibers, certified zari, and timeless aesthetics.
+          {selectedCategory === 'lehenga-choli'
+            ? 'Handcrafted designer lehenga cholis with authentic pure silk, art silk, embroidered and printed artisan sets.'
+            : 'Handcrafted by generational artisans with pure natural fibers, certified zari, and timeless aesthetics.'}
         </p>
       </div>
 

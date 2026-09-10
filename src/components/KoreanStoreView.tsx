@@ -508,8 +508,9 @@ export const KoreanStoreView: React.FC<KoreanStoreViewProps> = ({
             return (
               <div
                 key={occasion.id}
+                id={`card-occasion-${occasion.id}`}
                 onClick={() => handleOccasionClick(occasion)}
-                className={`group relative rounded-3xl p-5 cursor-pointer transition-all duration-300 bg-gradient-to-b ${occasion.stampColor} border-2 border-dashed ${occasion.borderColor} hover:border-[#FF4D6D] shadow-md hover:shadow-2xl hover:-translate-y-1.5 flex flex-col justify-between ${
+                className={`card group relative rounded-3xl p-5 cursor-pointer transition-all duration-300 bg-gradient-to-b ${occasion.stampColor} border-2 border-dashed ${occasion.borderColor} hover:border-[#FF4D6D] shadow-md hover:shadow-2xl hover:-translate-y-1.5 flex flex-col justify-between ${
                   isSelected ? 'ring-4 ring-[#FFB6C1] border-solid border-[#FF4D6D]' : ''
                 }`}
               >
@@ -527,7 +528,7 @@ export const KoreanStoreView: React.FC<KoreanStoreViewProps> = ({
                       <span className="text-[#FF4D6D]">♡</span>
                       <span>2026</span>
                     </span>
-                    <span className="font-extrabold bg-white px-2 py-0.5 rounded-full border border-[#FFCCD5] text-[#BE123C]">
+                    <span className="price-tag font-extrabold bg-white px-2 py-0.5 rounded-full border border-[#FFCCD5] text-[#BE123C]">
                       {occasion.stampPrice}
                     </span>
                   </div>
@@ -540,7 +541,7 @@ export const KoreanStoreView: React.FC<KoreanStoreViewProps> = ({
                       className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-500"
                       loading="lazy"
                     />
-                    <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-xs text-[10px] font-black text-[#BE123C] px-2.5 py-0.5 rounded-full border border-[#FFCCD5] shadow-xs">
+                    <div className="badge absolute top-2 left-2 bg-white/95 backdrop-blur-xs text-[10px] font-black text-[#BE123C] px-2.5 py-0.5 rounded-full border border-[#FFCCD5] shadow-xs">
                       {occasion.accentBadge}
                     </div>
                   </div>
@@ -556,7 +557,7 @@ export const KoreanStoreView: React.FC<KoreanStoreViewProps> = ({
 
                 {/* Bottom Stamp Seal */}
                 <div className="mt-4 pt-3 border-t border-dashed border-[#FFCCD5]/80 flex items-center justify-between">
-                  <span className="text-[11px] font-mono text-[#8A7174]">
+                  <span className="korean-text text-[11px] font-mono text-[#8A7174]">
                     {occasion.hangul}
                   </span>
                   <span className="text-xs font-bold text-[#FF4D6D] group-hover:translate-x-1 transition-transform flex items-center gap-1">

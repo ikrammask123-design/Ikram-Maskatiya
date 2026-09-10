@@ -56,7 +56,7 @@ const getColorHex = (colorName: string, explicitHex?: string): string => {
   if (lower.includes('pink') || lower.includes('rose')) return '#db2777';
   if (lower.includes('lavender') || lower.includes('purple')) return '#7c3aed';
   if (lower.includes('gold')) return '#d97706';
-  if (lower.includes('white')) return '#f8fafc';
+  if (lower.includes('white')) return '#ffffff';
   return '#881337';
 };
 
@@ -299,20 +299,25 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </p>
 
             {/* Available Colors with Instant Photo Switching */}
-            {product.availableColors && product.availableColors.length > 0 && (
+            {((product.availableColors && product.availableColors.length > 0) || (product.colors && product.colors.length > 0) || product.color) && (
               <div className="mb-5 p-3.5 bg-[#fff8f8] rounded-xl border border-[#debfc2]/50">
                 <div className="flex items-center justify-between mb-2.5">
                   <span className="text-xs font-bold text-[#1c1b1b] uppercase tracking-wider flex items-center gap-1.5">
                     <Palette className="w-3.5 h-3.5 text-[#6d0026]" />
-                    Select Shade: <span className="text-[#6d0026] capitalize font-bold">{selectedColor}</span>
+                    Select Shade: <span className="text-[#6d0026] capitalize font-bold">{selectedColor || product.color || 'White'}</span>
                   </span>
                   <span className="text-[11px] text-[#8a7174]">
                     Tap shade to view color
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2.5">
-                  {product.availableColors.map((col) => {
-                    const isSelected = selectedColor === col;
+                  {(product.availableColors && product.availableColors.length > 0
+                    ? product.availableColors
+                    : product.colors && product.colors.length > 0
+                    ? product.colors
+                    : [product.color || 'White']
+                  ).map((col) => {
+                    const isSelected = (selectedColor || product.color || 'White') === col;
                     const hexCode = getColorHex(col);
                     return (
                       <button
@@ -410,6 +415,59 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       {size}
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Dedicated Specifications (Lehenga Fabric, Choli Fabric, Dupatta Fabric, Stitching Type, Pattern, Sales Package) */}
+            {(product.specs || product.lehengaFabric || product.category === 'lehenga-choli' || product.category === 'Lehenga Choli') && (
+              <div id={`product-specs-box-${product.id}`} className="mb-5 p-4 bg-[#fcf9f8] rounded-xl border border-[#debfc2]/60 shadow-2xs">
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#debfc2]/40">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#6d0026]" />
+                    <h4 className="text-xs font-bold text-[#1c1b1b] uppercase tracking-wider">
+                      Product Specifications
+                    </h4>
+                  </div>
+                  <span className="text-[10px] font-semibold text-[#891738] bg-[#fed9e2]/60 px-2 py-0.5 rounded-full">
+                    {product.stitchingType || product.specs?.['Stitching Type'] || 'Semi Stitched'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-2.5 bg-white rounded-lg border border-[#debfc2]/30">
+                    <span className="text-[11px] font-semibold text-[#8a7174] block mb-0.5">Lehenga Fabric</span>
+                    <span className="font-bold text-[#1c1b1b]">{product.lehengaFabric || product.specs?.['Lehenga Fabric'] || product.fabric || 'Pure Silk'}</span>
+                  </div>
+                  <div className="p-2.5 bg-white rounded-lg border border-[#debfc2]/30">
+                    <span className="text-[11px] font-semibold text-[#8a7174] block mb-0.5">Choli Fabric</span>
+                    <span className="font-bold text-[#1c1b1b]">{product.choliFabric || product.specs?.['Choli Fabric'] || 'Pure Silk'}</span>
+                  </div>
+                  <div className="p-2.5 bg-white rounded-lg border border-[#debfc2]/30">
+                    <span className="text-[11px] font-semibold text-[#8a7174] block mb-0.5">Dupatta Fabric</span>
+                    <span className="font-bold text-[#1c1b1b]">{product.dupattaFabric || product.specs?.['Dupatta Fabric'] || 'Art Silk'}</span>
+                  </div>
+                  <div className="p-2.5 bg-white rounded-lg border border-[#debfc2]/30">
+                    <span className="text-[11px] font-semibold text-[#8a7174] block mb-0.5">Stitching Type</span>
+                    <span className="font-bold text-[#1c1b1b]">{product.stitchingType || product.specs?.['Stitching Type'] || 'Semi Stitched'}</span>
+                  </div>
+                  <div className="p-2.5 bg-white rounded-lg border border-[#debfc2]/30">
+                    <span className="text-[11px] font-semibold text-[#8a7174] block mb-0.5">Pattern</span>
+                    <span className="font-bold text-[#1c1b1b]">{product.pattern || product.specs?.['Pattern'] || 'Embroidered'}</span>
+                  </div>
+                  <div className="p-2.5 bg-white rounded-lg border border-[#debfc2]/30">
+                    <span className="text-[11px] font-semibold text-[#8a7174] block mb-0.5">Color</span>
+                    <span className="font-bold text-[#1c1b1b] flex items-center gap-1.5">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full border border-black/25 shrink-0"
+                        style={{ backgroundColor: getColorHex(selectedColor || product.color || 'White') }}
+                      />
+                      {selectedColor || product.color || 'White'}
+                    </span>
+                  </div>
+                  <div className="p-2.5 bg-white rounded-lg border border-[#debfc2]/30">
+                    <span className="text-[11px] font-semibold text-[#8a7174] block mb-0.5">Sales Package</span>
+                    <span className="font-bold text-[#1c1b1b]">{product.salesPackage || product.specs?.['Sales Package'] || '1 Semi Stitched Lehenga, 1 Unstitched Blouse, 1 Dupatta'}</span>
+                  </div>
                 </div>
               </div>
             )}

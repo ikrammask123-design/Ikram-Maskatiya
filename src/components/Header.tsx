@@ -299,6 +299,17 @@ export const Header: React.FC<HeaderProps> = ({
             Accessories
           </button>
           <button
+            id="btn-nav-lehenga-choli"
+            onClick={() => handleNavClick('categories', 'lehenga-choli')}
+            className={`text-[11px] tracking-[0.15em] uppercase font-bold transition-all ${
+              activeTab === 'categories' && selectedCategory === 'lehenga-choli'
+                ? 'text-[#6d0026] border-b-2 border-[#6d0026] pb-0.5'
+                : 'text-[#574144] hover:text-[#6d0026]'
+            }`}
+          >
+            LEHENGA CHOLI
+          </button>
+          <button
             onClick={() => handleNavClick('categories', 'all')}
             className="text-[11px] tracking-[0.15em] uppercase font-semibold text-[#891738] hover:text-[#6d0026] flex items-center gap-1.5"
           >
@@ -401,6 +412,14 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <span>Temple Jewellery & Bangles</span>
                 <span className="text-xs font-body text-[#8a7174]">Kundan & Gold</span>
+              </button>
+              <button
+                id="btn-drawer-lehenga-choli"
+                onClick={() => handleNavClick('categories', 'lehenga-choli')}
+                className="text-left font-display text-lg text-[#1c1b1b] hover:text-[#6d0026] py-1 font-semibold flex items-center justify-between"
+              >
+                <span className="text-[#6d0026] font-bold">LEHENGA CHOLI</span>
+                <span className="text-xs font-body text-[#8a7174]">Semi Stitched & Silk</span>
               </button>
               <button
                 onClick={() => handleNavClick('categories', 'all')}

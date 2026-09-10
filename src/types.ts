@@ -1,4 +1,4 @@
-export type CategoryId = 'all' | 'sarees' | 'kurtis' | 'dresses' | 'accessories' | 'bridal';
+export type CategoryId = 'all' | 'sarees' | 'kurtis' | 'dresses' | 'accessories' | 'bridal' | 'lehenga-choli';
 
 export interface ColorVariant {
   name: string;
@@ -10,15 +10,18 @@ export interface ColorVariant {
 export interface Product {
   id: string;
   name: string;
-  category: 'sarees' | 'kurtis' | 'dresses' | 'accessories' | 'bridal';
+  title?: string;
+  category: 'sarees' | 'kurtis' | 'dresses' | 'accessories' | 'bridal' | 'lehenga-choli' | 'Lehenga Choli';
   categoryLabel: string;
   price: number; // in INR
   originalPrice?: number;
   image: string;
   galleryImages?: string[];
+  images?: string[];
   fabric: string;
   weave?: string;
   color: string;
+  colors?: string[];
   description: string;
   craftDetails: string;
   isNewArrival?: boolean;
@@ -30,6 +33,21 @@ export interface Product {
   includesBlousePiece?: boolean;
   availableColors?: string[];
   colorVariants?: ColorVariant[];
+  lehengaFabric?: string;
+  choliFabric?: string;
+  dupattaFabric?: string;
+  stitchingType?: string;
+  pattern?: string;
+  salesPackage?: string;
+  specs?: {
+    'Lehenga Fabric'?: string;
+    'Choli Fabric'?: string;
+    'Dupatta Fabric'?: string;
+    'Stitching Type'?: string;
+    'Pattern'?: string;
+    'Sales Package'?: string;
+    [key: string]: string | undefined;
+  };
   reviews?: {
     id: string;
     author: string;

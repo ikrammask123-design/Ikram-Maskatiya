@@ -181,8 +181,23 @@ export const K_STAMP_OCCASIONS: KStampOccasion[] = [
     accentBadge: '♡ PARTY GLAM',
   },
   {
+    // CARD 2: Office & Weekend Brunch (Now showing Campus Products)
     id: 'occ-office-brunch',
     title: 'Office & Weekend Brunch',
+    hangul: '캠퍼스 & 카페 데이',
+    subtitle: 'Breezy relaxed button-downs & artistic printed rayon shirts',
+    tagline: 'Spense & maaesa Cotton Shirts',
+    stampPrice: '2 Fits • From ₹549',
+    image: '/maaesa Women Relaxed Fit Shirt - 1.webp',
+    filterTarget: 'relaxed-shirts',
+    stampColor: 'from-[#F3EEFF] to-[#EDE9FE]',
+    borderColor: 'border-[#DDD6FE]',
+    accentBadge: '♡ CAMPUS & CAFE',
+  },
+  {
+    // CARD 3: Campus & Cafe Everyday (Now showing Office Products)
+    id: 'occ-campus-cafe',
+    title: 'Campus & Cafe Everyday',
     hangul: '오피스 & 브런치 데이트',
     subtitle: 'Tailored desk-to-dinner sheaths & charming denim A-line flare',
     tagline: 'PATTZALA & TIARA WORLD Dresses',
@@ -192,19 +207,6 @@ export const K_STAMP_OCCASIONS: KStampOccasion[] = [
     stampColor: 'from-[#FDF4FF] to-[#FAE8FF]',
     borderColor: 'border-[#F5D0FE]',
     accentBadge: '✧ OFFICE & BRUNCH',
-  },
-  {
-    id: 'occ-campus-cafe',
-    title: 'Campus & Cafe Everyday',
-    hangul: '캠퍼스 & 카페 데이',
-    subtitle: 'Breezy relaxed button-downs & artistic printed rayon shirts',
-    tagline: 'Spense & maaesa Cotton Shirts',
-    stampPrice: '2 Fits • From ₹549',
-    image: '/maaesa Women Relaxed Fit Shirt - 1.webp',
-    filterTarget: 'relaxed-shirts',
-    stampColor: 'from-[#F3EEFF] to-[#EDE9FE]',
-    borderColor: 'border-[#DDD6FE]',
-    accentBadge: '☕ CAMPUS & CAFE',
   },
 ];
 
