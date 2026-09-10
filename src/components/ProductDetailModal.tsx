@@ -217,7 +217,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
             <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[11px] font-semibold text-[#6d0026] flex items-center gap-1.5 shadow-xs">
               <Sparkles className="w-3 h-3 text-[#aa314e]" />
-              Artisan Weave
+              {product.koreanCategory ? 'Seoul K-Aesthetic Drop' : 'Artisan Weave'}
             </div>
           </div>
 

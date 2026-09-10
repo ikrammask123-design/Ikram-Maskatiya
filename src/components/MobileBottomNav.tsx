@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Grid, Bell, User, ShoppingBag } from 'lucide-react';
+import { Home, LayoutGrid, Sparkles, Bell, User, ShoppingBag } from 'lucide-react';
 
 interface MobileBottomNavProps {
   activeTab: string;
@@ -31,14 +31,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             : 'text-[#574144] hover:bg-[#f6f3f2]'
         }`}
       >
-        <span
-          className="material-symbols-outlined text-2xl mb-0.5"
-          style={{
-            fontVariationSettings: activeTab === 'home' ? "'FILL' 1" : "'FILL' 0",
-          }}
-        >
-          home
-        </span>
+        <Home className={`w-5 h-5 mb-0.5 ${activeTab === 'home' ? 'stroke-[2.5]' : 'stroke-2'}`} />
         <span className="font-body text-[11px] tracking-tight">Home</span>
       </button>
 
@@ -52,18 +45,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             : 'text-[#574144] hover:bg-[#f6f3f2]'
         }`}
       >
-        <span
-          className="material-symbols-outlined text-2xl mb-0.5"
-          style={{
-            fontVariationSettings: activeTab === 'categories' ? "'FILL' 1" : "'FILL' 0",
-          }}
-        >
-          grid_view
-        </span>
+        <LayoutGrid className={`w-5 h-5 mb-0.5 ${activeTab === 'categories' ? 'stroke-[2.5]' : 'stroke-2'}`} />
         <span className="font-body text-[11px] tracking-tight">Categories</span>
       </button>
 
-      {/* Tab: K-Store (Flipkart-style K-Store Highlight) */}
+      {/* Tab: K-Store (Korean Store Highlight) */}
       <button
         id="btn-nav-korean"
         onClick={() => setActiveTab('korean-store')}
@@ -74,15 +60,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         }`}
       >
         <div className="relative">
-          <span
-            className="material-symbols-outlined text-2xl mb-0.5 text-[#db2777]"
-            style={{
-              fontVariationSettings: activeTab === 'korean-store' ? "'FILL' 1" : "'FILL' 0",
-            }}
-          >
-            auto_awesome
-          </span>
-          <span className="absolute -top-1 -right-2 text-[8px] bg-gradient-to-r from-[#ec4899] to-[#8b5cf6] text-white font-extrabold px-1 rounded-full leading-none py-0.5 shadow-2xs">
+          <Sparkles className={`w-5 h-5 mb-0.5 text-[#db2777] ${activeTab === 'korean-store' ? 'fill-[#db2777]' : ''}`} />
+          <span className="absolute -top-1.5 -right-3 text-[8px] bg-gradient-to-r from-[#ec4899] to-[#8b5cf6] text-white font-extrabold px-1 rounded-full leading-none py-0.5 shadow-2xs">
             HOT
           </span>
         </div>
@@ -100,14 +79,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         }`}
       >
         <div className="relative">
-          <span
-            className="material-symbols-outlined text-2xl mb-0.5"
-            style={{
-              fontVariationSettings: activeTab === 'alerts' ? "'FILL' 1" : "'FILL' 0",
-            }}
-          >
-            notifications
-          </span>
+          <Bell className={`w-5 h-5 mb-0.5 ${activeTab === 'alerts' ? 'stroke-[2.5]' : 'stroke-2'}`} />
           {unreadAlertsCount > 0 && (
             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#aa314e] rounded-full ring-2 ring-white"></span>
           )}
@@ -125,14 +97,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             : 'text-[#574144] hover:bg-[#f6f3f2]'
         }`}
       >
-        <span
-          className="material-symbols-outlined text-2xl mb-0.5"
-          style={{
-            fontVariationSettings: activeTab === 'account' ? "'FILL' 1" : "'FILL' 0",
-          }}
-        >
-          person
-        </span>
+        <User className={`w-5 h-5 mb-0.5 ${activeTab === 'account' ? 'stroke-[2.5]' : 'stroke-2'}`} />
         <span className="font-body text-[11px] tracking-tight">Account</span>
       </button>
 
@@ -143,9 +108,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         className="flex flex-col items-center justify-center transition-all duration-200 px-3 py-1 rounded-full text-[#574144] hover:bg-[#f6f3f2] relative"
       >
         <div className="relative">
-          <span className="material-symbols-outlined text-2xl mb-0.5">
-            shopping_bag
-          </span>
+          <ShoppingBag className="w-5 h-5 mb-0.5 stroke-2" />
           {cartCount > 0 && (
             <span className="absolute -top-1 -right-2 bg-[#6d0026] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
               {cartCount}

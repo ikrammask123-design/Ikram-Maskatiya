@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import {
   getShiprocketToken,
   createShiprocketOrder,
@@ -8,37 +9,52 @@ import {
   trackShipment,
 } from './server/shiprocket';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const DATA_DIR = path.join(process.cwd(), 'data');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+let inMemoryOrders: any[] = [];
 
 function ensureDataDir(): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(ORDERS_FILE)) {
-    fs.writeFileSync(ORDERS_FILE, JSON.stringify([], null, 2), 'utf-8');
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(ORDERS_FILE)) {
+      fs.writeFileSync(ORDERS_FILE, JSON.stringify([], null, 2), 'utf-8');
+    }
+  } catch (err) {
+    console.warn('Filesystem access limited, using in-memory orders store:', err);
   }
 }
 
 function readOrders(): any[] {
   try {
     ensureDataDir();
-    const data = fs.readFileSync(ORDERS_FILE, 'utf-8');
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) ? parsed : [];
+    if (fs.existsSync(ORDERS_FILE)) {
+      const data = fs.readFileSync(ORDERS_FILE, 'utf-8');
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        inMemoryOrders = parsed;
+        return parsed;
+      }
+    }
+    return inMemoryOrders;
   } catch (err) {
-    console.error('Error reading orders from disk:', err);
-    return [];
+    console.error('Error reading orders from disk, falling back to memory:', err);
+    return inMemoryOrders;
   }
 }
 
 function writeOrders(orders: any[]): boolean {
+  inMemoryOrders = orders;
   try {
     ensureDataDir();
     fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2), 'utf-8');
     return true;
   } catch (err) {
-    console.error('Error writing orders to disk:', err);
+    console.error('Error writing orders to disk, cached in memory:', err);
     return false;
   }
 }
@@ -312,7 +328,20 @@ async function startServer() {
   });
 
   // Vite middleware for development vs static for production
-  const distPath = path.join(process.cwd(), 'dist');
+  const candidateDistPaths = [
+    path.join(process.cwd(), 'dist'),
+    path.resolve('dist'),
+    path.join(__dirname, '..', 'dist'),
+    __dirname,
+  ];
+  const distPath = candidateDistPaths.find((p) => {
+    try {
+      return fs.existsSync(path.join(p, 'index.html'));
+    } catch {
+      return false;
+    }
+  }) || path.join(process.cwd(), 'dist');
+
   const hasDist = fs.existsSync(path.join(distPath, 'index.html'));
   const isProduction = process.env.NODE_ENV === 'production' || hasDist;
 
@@ -326,13 +355,25 @@ async function startServer() {
   } else {
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      const indexFile = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexFile)) {
+        res.sendFile(indexFile);
+      } else {
+        res.status(404).send('Application build output not found. Please verify npm run build.');
+      }
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Zevioza Central Server] Running on http://0.0.0.0:${PORT}`);
+  });
+
+  server.on('error', (err: any) => {
+    console.error('[Zevioza Central Server] Server listen error:', err);
   });
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error('[Zevioza Central Server] Fatal error during startup:', err);
+  process.exit(1);
+});

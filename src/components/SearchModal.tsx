@@ -28,8 +28,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     'Rose Petal Silk',
     'Lucknowi Chikankari',
     'Banarasi Brocade',
+    'Bodycon Maxi',
+    'Korean Aesthetic',
     'Temple Jewellery',
-    'Organza Gown',
     'Kanjivaram Saree',
   ];
 
