@@ -9,8 +9,17 @@ import {
   trackShipment,
 } from './server/shiprocket';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Safely derive directory name in both ESM (tsx) and CJS (bundled esbuild) environments
+const serverFilename =
+  typeof __filename !== 'undefined'
+    ? __filename
+    : typeof import.meta !== 'undefined' && (import.meta as any).url
+    ? fileURLToPath((import.meta as any).url)
+    : process.cwd();
+const serverDirname =
+  typeof __dirname !== 'undefined'
+    ? __dirname
+    : path.dirname(serverFilename);
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
@@ -331,8 +340,8 @@ async function startServer() {
   const candidateDistPaths = [
     path.join(process.cwd(), 'dist'),
     path.resolve('dist'),
-    path.join(__dirname, '..', 'dist'),
-    __dirname,
+    path.join(serverDirname, '..', 'dist'),
+    serverDirname,
   ];
   const distPath = candidateDistPaths.find((p) => {
     try {

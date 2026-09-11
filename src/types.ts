@@ -1,4 +1,4 @@
-export type CategoryId = 'all' | 'sarees' | 'kurtis' | 'dresses' | 'accessories' | 'bridal' | 'lehenga-choli';
+export type CategoryId = 'all' | 'sarees' | 'kurtis' | 'dresses' | 'accessories' | 'bridal' | 'lehenga-choli' | 'k-store';
 
 export interface ColorVariant {
   name: string;
@@ -11,8 +11,9 @@ export interface Product {
   id: string;
   name: string;
   title?: string;
-  category: 'sarees' | 'kurtis' | 'dresses' | 'accessories' | 'bridal' | 'lehenga-choli' | 'Lehenga Choli';
+  category: 'sarees' | 'kurtis' | 'dresses' | 'accessories' | 'bridal' | 'lehenga-choli' | 'Lehenga Choli' | 'k-store';
   categoryLabel: string;
+  isKoreanStore?: boolean;
   price: number; // in INR
   originalPrice?: number;
   image: string;

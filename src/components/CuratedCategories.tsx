@@ -53,6 +53,12 @@ const CategoryCardItem: React.FC<CategoryCardItemProps> = ({
             key={imgSrc + imgIdx}
             src={imgSrc}
             alt={`${card.title} preview ${imgIdx + 1}`}
+            onError={(e) => {
+              // Fallback to primary image if sub-image fails
+              if (card.image && (e.currentTarget as HTMLImageElement).src !== card.image) {
+                (e.currentTarget as HTMLImageElement).src = card.image;
+              }
+            }}
             className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-1000 ease-in-out group-hover:scale-108 ${
               isCurrent ? 'opacity-100 scale-100 z-0' : 'opacity-0 scale-105 pointer-events-none -z-10'
             }`}
@@ -115,7 +121,7 @@ export const CuratedCategories: React.FC<CuratedCategoriesProps> = ({
       </div>
 
       {/* Grid of Collection Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5">
         {CATEGORY_CARDS.map((card, index) => (
           <CategoryCardItem
             key={card.id}

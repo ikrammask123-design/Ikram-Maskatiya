@@ -294,7 +294,7 @@ export default function App() {
       <main className="flex-1 w-full pt-16 sm:pt-[108px] pb-20 md:pb-0">
         {activeTab === 'home' && (
           <HomeView
-            products={ALL_PRODUCTS}
+            products={PRODUCTS}
             currency={currency}
             wishlistIds={wishlistIds}
             onSelectCategory={handleSelectCategory}
@@ -321,7 +321,7 @@ export default function App() {
 
         {activeTab === 'categories' && (
           <CategoryView
-            products={ALL_PRODUCTS}
+            products={PRODUCTS}
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
             currency={currency}

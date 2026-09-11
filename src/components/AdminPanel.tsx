@@ -104,7 +104,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
   const [trackingInput, setTrackingInput] = useState({ courier: '', trackingNumber: '' });
   const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false);
   const [isAdVideoModalOpen, setIsAdVideoModalOpen] = useState(false);
-  const [adVideoTab, setAdVideoTab] = useState<'viral' | 'collection' | 'saree'>('viral');
+  const [adVideoTab, setAdVideoTab] = useState<'mega' | 'viral' | 'collection' | 'saree'>('mega');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Customer WhatsApp Notification Modal State
@@ -2343,7 +2343,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                 </div>
               </div>
 
-              {adVideoTab === 'viral' ? (
+              {adVideoTab === 'mega' ? (
+                <a
+                  href="/zevioza_mega_ad_2026.mp4"
+                  download="Zevioza_Mega_Runway_Review_Ad.mp4"
+                  className="flex items-center gap-2 bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-400 hover:to-amber-400 text-neutral-950 font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg transition-all cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download Mega Merged Ad (26s .MP4)</span>
+                </a>
+              ) : adVideoTab === 'viral' ? (
                 <a
                   href="/zevioza_viral_ad_2026.mp4"
                   download="Zevioza_Viral_Model_Runway_Ad.mp4"
@@ -2374,7 +2383,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
             </div>
 
             {/* Campaign Selector Tabs */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6 bg-white/5 p-1.5 rounded-2xl border border-white/10">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mb-6 bg-white/5 p-1.5 rounded-2xl border border-white/10">
+              <button
+                type="button"
+                onClick={() => setAdVideoTab('mega')}
+                className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  adVideoTab === 'mega'
+                    ? 'bg-gradient-to-r from-rose-500 via-amber-500 to-amber-600 text-neutral-950 shadow-md'
+                    : 'text-neutral-300 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Mega Runway & Review (26s)</span>
+                <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wide">New</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setAdVideoTab('viral')}
@@ -2384,9 +2407,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                     : 'text-neutral-300 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Viral Model Runway Reel (14.7s)</span>
-                <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wide">Hot</span>
+                <Film className="w-3.5 h-3.5" />
+                <span>Model Runway (14.7s)</span>
               </button>
 
               <button
@@ -2399,7 +2421,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                 }`}
               >
                 <Film className="w-3.5 h-3.5" />
-                <span>Collection Showcase (19s)</span>
+                <span>Collection (19s)</span>
               </button>
 
               <button
@@ -2412,9 +2434,121 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                 }`}
               >
                 <Film className="w-3.5 h-3.5" />
-                <span>Classic Saree Walk (10.2s)</span>
+                <span>Saree Walk (10.2s)</span>
               </button>
             </div>
+
+            {/* Tab: Mega Runway & Review Merged Video */}
+            {adVideoTab === 'mega' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="lg:col-span-5 flex flex-col items-center">
+                  <div className="relative w-full max-w-[280px] sm:max-w-[300px] aspect-[9/16] bg-black rounded-2xl overflow-hidden shadow-2xl border-2 border-rose-500/60">
+                    <video
+                      key="mega-merged-video"
+                      src="/zevioza_mega_ad_2026.mp4"
+                      controls
+                      autoPlay
+                      playsInline
+                      loop
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <p className="text-[11px] text-amber-300/90 mt-2 text-center font-medium">
+                    26.0s • 720x1280 (9:16) • Runway Walk + Embroidery Zoom + Twirl + Review Shots + CTA
+                  </p>
+                </div>
+
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="bg-white/5 rounded-2xl p-4 border border-white/10 space-y-3">
+                    <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Complete Advertising Video Breakdown
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-start gap-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-white block">1. Model Runway Walking Shot</span>
+                          <span className="text-neutral-400 text-[11px]">Graceful slow-motion walk towards camera with fluid silhouette & ambient studio lighting.</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-white block">2. Embroidery Zoom Detail Shot</span>
+                          <span className="text-neutral-400 text-[11px]">Cinematic zoom on Resham & Gold Zari craftwork of Kedar Fab semi-stitched lehenga.</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-white block">3. Flowing Twirl & Motion Shot</span>
+                          <span className="text-neutral-400 text-[11px]">Dynamic 4m+ circular flare twirl highlighting fabric movement and elegance.</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-white block">4. Verified Product Review Shot</span>
+                          <span className="text-neutral-400 text-[11px]">Customer rating 4.9/5.0 with Surat master craftsmanship guarantee & social proof.</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ready to Use Meta / Instagram Caption */}
+                  <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Copy className="w-3.5 h-3.5 text-amber-400" />
+                        Ready-to-Post Instagram & Meta Ad Caption
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`✨ Elevate your festive wardrobe with ZEVIOZA Haute Couture.\n\n👑 Handcrafted Bridal & Festive Lehenga Choli\n🌟 Intricate Gold Zari & Resham Embroidery\n💫 Flattering 4M+ Volume Flare • Semi-Stitched Free Size\n\n⚡ Flat 70% OFF Festive Privilege Drop\n🚚 FREE Express Shipping & Cash On Delivery Available across India!\n\n👉 Tap link in bio to shop the collection now!`);
+                          setToastMessage('Instagram Ad Caption copied to clipboard!');
+                          setTimeout(() => setToastMessage(null), 3000);
+                        }}
+                        className="text-[11px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-semibold px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                      >
+                        Copy Caption
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-neutral-300 font-mono bg-black/40 p-3 rounded-xl border border-white/5 leading-relaxed">
+                      ✨ Elevate your festive wardrobe with ZEVIOZA Haute Couture.<br />
+                      👑 Handcrafted Bridal & Festive Lehenga Choli<br />
+                      🌟 Intricate Gold Zari & Resham Embroidery<br />
+                      💫 Flattering 4M+ Volume Flare • Semi-Stitched Free Size<br />
+                      ⚡ Flat 70% OFF Festive Privilege Drop<br />
+                      🚚 FREE Express Shipping & Cash On Delivery Available!
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <a
+                      href="/zevioza_mega_ad_2026.mp4"
+                      download="Zevioza_Mega_Runway_Review_Ad.mp4"
+                      className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 via-amber-500 to-amber-600 hover:from-rose-400 hover:to-amber-500 text-neutral-950 text-xs font-bold px-5 py-3 rounded-xl shadow-lg transition-all cursor-pointer"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Download Video File (5.8 MB MP4)</span>
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsAdVideoModalOpen(false)}
+                      className="text-xs text-neutral-400 hover:text-white px-4 py-2"
+                    >
+                      Close Window
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Tab 0: Viral Model Runway Ad (Merged 4 Videos) */}
             {adVideoTab === 'viral' && (
