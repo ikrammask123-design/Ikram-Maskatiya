@@ -31,11 +31,24 @@ export const KoreanProductCard: React.FC<KoreanProductCardProps> = ({
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  const handleCopyIgLink = (e: React.MouseEvent) => {
+  const handleCopyIgLink = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    const directUrl = `${window.location.origin}${window.location.pathname}?product=${product.id}`;
+    const shareText = `Check out ${product.name} on Zevioza Korean Store! Link: ${directUrl}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${product.name} | Zevioza Korean Store`,
+          text: shareText,
+          url: directUrl,
+        });
+        return;
+      } catch {}
+    }
+
     try {
-      const shareText = `Check out ${product.name} on Zevioza K-Aesthetic Store! Link: https://zevioza.in/#korean-${product.id}`;
-      navigator.clipboard.writeText(shareText);
+      await navigator.clipboard.writeText(shareText);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2400);
     } catch {

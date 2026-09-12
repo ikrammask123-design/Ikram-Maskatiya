@@ -1,6 +1,99 @@
 import { Product } from '../types';
 
-export type KoreanCategoryKey = 'bodycon-maxi' | 'sheath-aline' | 'relaxed-shirts';
+export type KoreanCategoryKey =
+  | 'party-glam'
+  | 'campus-cafe'
+  | 'office-brunch'
+  | 'bodycon-maxi'
+  | 'sheath-aline'
+  | 'relaxed-shirts';
+
+export interface KoreanStoreSection {
+  id: 'party-glam' | 'campus-cafe' | 'office-brunch';
+  title: string;
+  hangul: string;
+  subtitle: string;
+  badge: string;
+  tagline: string;
+  accentColor: string;
+  bgGradient: string;
+  border: string;
+  filterKey: KoreanCategoryKey;
+  image: string;
+  images: string[];
+  fitsCount: number;
+  startingPrice: number;
+  highlightPills: string[];
+}
+
+export const K_STORE_SECTIONS: KoreanStoreSection[] = [
+  {
+    id: 'party-glam',
+    title: 'Party & Evening Glam',
+    hangul: '파티 & 나이트 룩',
+    subtitle: 'Figure-sculpting corset bodycons, satin cowl midis, chic shrugs & cocktail night fits',
+    badge: '♡ CATEGORY 01',
+    tagline: 'Corset Bodycons, Satin Midis & Evening Fits',
+    accentColor: '#FF4D6D',
+    bgGradient: 'from-[#FFF1F2] to-[#FFE4E6]',
+    border: 'border-[#FECDD3]',
+    filterKey: 'party-glam',
+    image: '/Square Neck Backles Crisscross Yellow - 1.jpg',
+    images: [
+      '/Square Neck Backles Crisscross Yellow - 1.jpg',
+      '/METRONAUT Women Bodycon Black - 1.webp',
+      '/Traquila Women Bodycon Maroon - 1.webp',
+      '/Women Cowl Neck Black - 1.jpg',
+    ],
+    fitsCount: 7,
+    startingPrice: 599,
+    highlightPills: ['Corset Bodycons', 'Satin Midis', 'Night Fits'],
+  },
+  {
+    id: 'campus-cafe',
+    title: 'Campus & Cafe Everyday',
+    hangul: '캠퍼스 & 카페 데이',
+    subtitle: 'Breezy relaxed cotton button-downs, light blue Seoul streetwear & casual flare dresses',
+    badge: '♡ CATEGORY 02',
+    tagline: 'Seoul Relaxed Cotton Shirts & Campus Fits',
+    accentColor: '#7C3AED',
+    bgGradient: 'from-[#F3EEFF] to-[#EDE9FE]',
+    border: 'border-[#DDD6FE]',
+    filterKey: 'campus-cafe',
+    image: '/Spense Clothing Women Relaxed Fit - Light Blue -1.webp',
+    images: [
+      '/Spense Clothing Women Relaxed Fit - Light Blue -1.webp',
+      '/Spense Clothing Women Relaxed Fit - 1.webp',
+      '/maaesa Women Relaxed Fit Shirt - 1.webp',
+      '/TIARA WORLD Women A-line White, Blue - 1.webp',
+    ],
+    fitsCount: 3,
+    startingPrice: 549,
+    highlightPills: ['Cotton Shirts', 'Streetwear Fits', 'Campus Casual'],
+  },
+  {
+    id: 'office-brunch',
+    title: 'Office & Weekend Brunch',
+    hangul: '오피스 & 브런치 데이트',
+    subtitle: 'Tailored desk-to-dinner sheath midis, elegant beige knits & boardroom poise',
+    badge: '✧ CATEGORY 03',
+    tagline: 'Tailored Sheath Midis & Minimalist Knits',
+    accentColor: '#C026D3',
+    bgGradient: 'from-[#FDF4FF] to-[#FAE8FF]',
+    border: 'border-[#F5D0FE]',
+    filterKey: 'office-brunch',
+    image: '/PATTZALA Women Sheath Purple - 1.webp',
+    images: [
+      '/PATTZALA Women Sheath Purple - 1.webp',
+      '/PATTZALA Women Sheath Black - 1.webp',
+      '/Puff Sleeve Biege - 1.jpg',
+      '/Women Cowl Neck Brown - 1.jpg',
+    ],
+    fitsCount: 5,
+    startingPrice: 699,
+    highlightPills: ['Tailored Sheaths', 'Minimalist Knits', 'Brunch Poise'],
+  },
+];
 
 export interface KAestheticCategory {
   id: KoreanCategoryKey;
@@ -56,6 +149,25 @@ export interface KProduct extends Product {
   aestheticBadge?: string;
   badgeType?: 'ig-link' | 'instant-checkout' | 'trending' | 'bestseller';
   gender: 'female';
+}
+
+export function getProductStoreSection(product: KProduct): 'party-glam' | 'campus-cafe' | 'office-brunch' {
+  if (product.koreanCategory === 'party-glam') return 'party-glam';
+  if (product.koreanCategory === 'campus-cafe') return 'campus-cafe';
+  if (product.koreanCategory === 'office-brunch') return 'office-brunch';
+
+  // ID-based specific mappings
+  if (product.id === 'k-pattzala-sheath-midi' || product.id === 'k-stylecast-beige-bodycon') {
+    return 'office-brunch';
+  }
+  if (
+    product.id === 'k-spense-relaxed-shirt' ||
+    product.id === 'k-maaesa-relaxed-shirt' ||
+    product.id === 'k-tiara-world-a-line'
+  ) {
+    return 'campus-cafe';
+  }
+  return 'party-glam';
 }
 
 // =========================================================================

@@ -12,10 +12,13 @@ import {
   Share2,
   Palette,
   Eye,
+  Maximize2,
+  ZoomIn,
 } from 'lucide-react';
 import { Product, Currency } from '../types';
 import { formatPrice } from './ProductCard';
 import { FlipkartProductDetails } from './FlipkartProductDetails';
+import { ImageLightboxModal } from './ImageLightboxModal';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -85,6 +88,19 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [showReviewsTab, setShowReviewsTab] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // Sync URL query param ?product=id so the browser address bar immediately reflects the piece
+  React.useEffect(() => {
+    if (product) {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('product', product.id);
+        window.history.replaceState(null, '', url.toString());
+      } catch {}
+    }
+  }, [product]);
 
   React.useEffect(() => {
     if (product) {
@@ -157,6 +173,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     ? product.galleryImages
     : [product.image]).filter(Boolean);
 
+  const openLightbox = (imgSrc?: string) => {
+    const target = imgSrc || displayImage;
+    const idx = images.indexOf(target);
+    setLightboxIndex(idx >= 0 ? idx : 0);
+    setIsLightboxOpen(true);
+  };
+
   const handleAdd = () => {
     onAddToCart(product, selectedSize, customStitching, customNotes, selectedColor, displayImage);
     setAddedToast(true);
@@ -167,59 +190,117 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     onBuyNow(product, selectedSize, customStitching, customNotes, selectedColor, displayImage);
   };
 
-  const handleShare = () => {
+  const getProductDirectLink = () => {
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('product', product.id);
+      url.hash = `product-${product.id}`;
+      return url.toString();
+    } catch {
+      return `${window.location.origin}${window.location.pathname}?product=${product.id}`;
+    }
+  };
+
+  const handleShare = async () => {
+    const directLink = getProductDirectLink();
+    const shareTitle = `${product.name} | Zevioza`;
+    const shareText = `Explore ${product.name} (₹${product.price}) on Zevioza! Direct link: ${directLink}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: directLink,
+        });
+        return;
+      } catch {
+        // Fallback to clipboard
+      }
+    }
+
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
+      try {
+        await navigator.clipboard.writeText(directLink);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2500);
+      } catch {}
     }
   };
 
   return (
-    <div
-      id="product-detail-modal-overlay"
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
-    >
+    <>
       <div
-        id="product-detail-modal-container"
-        className="relative bg-white w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl border border-[#debfc2]/30 max-h-[92vh] flex flex-col md:flex-row my-auto animate-scaleUp"
+        id="product-detail-modal-overlay"
+        className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
       >
-        {/* Close Button */}
-        <button
-          id="btn-close-modal"
-          onClick={onClose}
-          className="absolute top-4 right-4 z-20 bg-white/80 hover:bg-white text-[#574144] p-2 rounded-full shadow-md backdrop-blur-md transition-all focus:outline-none"
-          aria-label="Close product view"
+        <div
+          id="product-detail-modal-container"
+          className="relative bg-white w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl border border-[#debfc2]/30 max-h-[92vh] flex flex-col md:flex-row my-auto animate-scaleUp"
         >
-          <X className="w-5 h-5" />
-        </button>
+          {/* Close Button */}
+          <button
+            id="btn-close-modal"
+            onClick={onClose}
+            className="absolute top-4 right-4 z-20 bg-white/80 hover:bg-white text-[#574144] p-2 rounded-full shadow-md backdrop-blur-md transition-all focus:outline-none"
+            aria-label="Close product view"
+          >
+            <X className="w-5 h-5" />
+          </button>
 
-        {/* Left: Gallery Section */}
-        <div className="md:w-1/2 bg-[#f6f3f2] p-5 sm:p-8 flex flex-col items-center justify-between border-b md:border-b-0 md:border-r border-[#f0eded]">
-          <div className="relative aspect-3/4 w-full max-h-[380px] md:max-h-[460px] rounded-xl overflow-hidden bg-white shadow-xs">
-            <img
-              key={displayImage}
-              src={displayImage}
-              alt={`${product.name} - ${selectedColor}`}
-              className="w-full h-full object-cover object-center transition-all duration-300 animate-fadeIn"
-            />
+          {/* Left: Gallery Section */}
+          <div className="md:w-1/2 bg-[#f6f3f2] p-5 sm:p-8 flex flex-col items-center justify-between border-b md:border-b-0 md:border-r border-[#f0eded]">
+            {/* Primary Clickable Image with Zoom Cue */}
+            <div
+              onClick={() => openLightbox()}
+              className="group relative aspect-3/4 w-full max-h-[380px] md:max-h-[460px] rounded-xl overflow-hidden bg-white shadow-xs cursor-zoom-in"
+              title="Click or tap to view enlarged photo"
+            >
+              <img
+                key={displayImage}
+                src={displayImage}
+                alt={`${product.name} - ${selectedColor}`}
+                className="w-full h-full object-cover object-center transition-all duration-300 group-hover:scale-105"
+              />
 
-            {/* Selected Shade Indicator Badge */}
-            {selectedColor && (
-              <div className="absolute top-3 left-3 bg-black/75 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-medium text-white flex items-center gap-1.5 shadow-md">
-                <span
-                  className="w-2.5 h-2.5 rounded-full border border-white/40 shadow-xs"
-                  style={{ backgroundColor: getColorHex(selectedColor) }}
-                />
-                <span>Shade: {selectedColor}</span>
+              {/* Hover / Tap Zoom Overlay Pill */}
+              <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center pointer-events-none">
+                <span className="bg-white/95 text-[#1c1b1b] text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
+                  <Maximize2 className="w-3.5 h-3.5 text-[#6d0026]" />
+                  <span>Click to view large (HD)</span>
+                </span>
               </div>
-            )}
 
-            <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[11px] font-semibold text-[#6d0026] flex items-center gap-1.5 shadow-xs">
-              <Sparkles className="w-3 h-3 text-[#aa314e]" />
-              {product.koreanCategory ? 'Seoul K-Aesthetic Drop' : 'Artisan Weave'}
+              {/* Enlarge Button (Always Visible) */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openLightbox();
+                }}
+                className="absolute top-3 right-3 bg-black/60 hover:bg-black/85 text-white p-2 rounded-full backdrop-blur-md transition-all shadow-md z-10"
+                title="Open large full-screen view"
+                aria-label="Enlarge image"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+
+              {/* Selected Shade Indicator Badge */}
+              {selectedColor && (
+                <div className="absolute top-3 left-3 bg-black/75 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-medium text-white flex items-center gap-1.5 shadow-md">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full border border-white/40 shadow-xs"
+                    style={{ backgroundColor: getColorHex(selectedColor) }}
+                  />
+                  <span>Shade: {selectedColor}</span>
+                </div>
+              )}
+
+              <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[11px] font-semibold text-[#6d0026] flex items-center gap-1.5 shadow-xs">
+                <Sparkles className="w-3 h-3 text-[#aa314e]" />
+                {product.koreanCategory || product.isKoreanStore ? 'Korean Store Exclusive' : 'Artisan Weave'}
+              </div>
             </div>
-          </div>
 
           {images.length > 1 && (
             <div className="flex gap-3 mt-4 overflow-x-auto py-1 max-w-full">
@@ -603,7 +684,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </button>
             </div>
 
-            {/* WhatsApp Direct Inquiry */}
+            {/* WhatsApp Direct Inquiry with Direct Product Link */}
             <div className="mt-3 text-center">
               <a
                 id="btn-modal-whatsapp-inquiry"
@@ -612,7 +693,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     selectedColor ? `, Color/Shade: ${selectedColor}` : ''
                   }${selectedSize ? `, Size: ${selectedSize}` : ''}${
                     customStitching ? ', with Custom Stitching' : ''
-                  }). Please confirm stock and delivery timeline!`
+                  }).\n\nProduct Link: ${getProductDirectLink()}\n\nPlease confirm stock and delivery timeline!`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -637,5 +718,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         </div>
       </div>
     </div>
-  );
+
+    {/* Enlarged Photo Lightbox Modal */}
+    <ImageLightboxModal
+      isOpen={isLightboxOpen}
+      onClose={() => setIsLightboxOpen(false)}
+      images={images}
+      initialIndex={lightboxIndex}
+      productName={product.name}
+      currentColor={selectedColor}
+    />
+  </>
+);
 };

@@ -164,7 +164,40 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* 3. Right: Icons Action Row */}
-          <div className="flex items-center gap-2 sm:gap-4 text-[#574144]">
+          <div className="flex items-center gap-2 sm:gap-3 text-[#574144]">
+            {/* Korean Store Boutique Pill Button in Top Bar */}
+            <button
+              id="btn-header-korean-store"
+              onClick={() => handleNavClick('korean-store')}
+              className={`hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide transition-all shadow-xs shrink-0 cursor-pointer ${
+                activeTab === 'korean-store'
+                  ? 'bg-gradient-to-r from-[#ec4899] via-[#d946ef] to-[#8b5cf6] text-white ring-2 ring-[#f472b6]/40 shadow-sm'
+                  : 'bg-gradient-to-r from-[#fff0f5] via-[#fce7f3] to-[#ede9fe] text-[#be123c] hover:text-[#7c3aed] border border-[#fbcfe8] hover:border-[#d8b4fe]'
+              }`}
+              title="Explore Korean Store"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#ec4899] fill-[#ec4899]" />
+              <span className="font-display tracking-tight text-[12px] font-extrabold">Korean Store</span>
+              <span className="text-[9px] bg-[#ec4899] text-white font-extrabold px-1.5 py-0.5 rounded-full shadow-2xs">
+                HOT
+              </span>
+            </button>
+
+            {/* Mobile Korean Store Pill Button */}
+            <button
+              id="btn-mobile-korean-store"
+              onClick={() => handleNavClick('korean-store')}
+              className={`sm:hidden flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all border ${
+                activeTab === 'korean-store'
+                  ? 'bg-[#ec4899] text-white border-[#ec4899] shadow-xs'
+                  : 'bg-[#fff0f5] text-[#be123c] border-[#fbcfe8]'
+              }`}
+              title="Korean Store"
+            >
+              <Sparkles className="w-3 h-3 text-[#ec4899] fill-[#ec4899]" />
+              <span>Korean</span>
+            </button>
+
             {/* Mobile Search Button */}
             <button
               id="btn-mobile-search-open"
@@ -316,22 +349,6 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="w-1.5 h-1.5 rounded-full bg-[#aa314e] animate-ping"></span>
             New Arrivals
           </button>
-          {/* Korean Store Tab (Flipkart Inspired Gen-Z Section) */}
-          <button
-            id="btn-nav-korean-store"
-            onClick={() => handleNavClick('korean-store')}
-            className={`text-[11px] tracking-[0.12em] uppercase font-bold transition-all px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs ${
-              activeTab === 'korean-store'
-                ? 'bg-gradient-to-r from-[#ec4899] via-[#d946ef] to-[#8b5cf6] text-white shadow-sm ring-2 ring-[#f472b6]/40'
-                : 'bg-gradient-to-r from-[#fdf2f8] to-[#f3e8ff] text-[#db2777] hover:text-[#9333ea] border border-[#fbcfe8] hover:border-[#f472b6]'
-            }`}
-          >
-            <Sparkles className="w-3 h-3 text-[#eab308] fill-[#eab308]" />
-            <span>K-Aesthetic Store</span>
-            <span className="text-[9px] bg-white text-[#db2777] font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs">
-              HOT
-            </span>
-          </button>
         </div>
       </header>
 
@@ -368,14 +385,14 @@ export const Header: React.FC<HeaderProps> = ({
                 <div>
                   <div className="flex items-center gap-1.5 text-xs font-black text-[#db2777] tracking-wider uppercase">
                     <Sparkles className="w-3.5 h-3.5 fill-[#db2777]" />
-                    <span>Korean Store (K-Aesthetic)</span>
+                    <span>Korean Store</span>
                   </div>
                   <span className="text-[11px] text-[#7c3aed] font-medium block mt-0.5">
-                    K-Drama Fits, Bow Bags & Kurtis @ ₹149
+                    Party Bodycons, Campus Shirts & Office Sheaths
                   </span>
                 </div>
                 <span className="bg-[#db2777] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-2xs">
-                  NEW
+                  HOT
                 </span>
               </button>
 

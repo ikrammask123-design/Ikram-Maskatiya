@@ -84,26 +84,26 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <div className="max-w-xl text-center md:text-left">
                 <div className="inline-flex items-center gap-2 bg-white/95 backdrop-blur-xs px-3.5 py-1 rounded-full border border-[#FFCCD5] text-[11px] font-bold text-[#E11D48] shadow-2xs mb-2.5">
                   <Sparkles className="w-3.5 h-3.5 fill-[#FF4D6D] text-[#FF4D6D]" />
-                  <span>100% FEMALE FOCUSED • KOREAN AESTHETIC</span>
-                  <span className="text-[#7C3AED]">한국 에스테틱</span>
+                  <span>100% FEMALE FOCUSED • KOREAN STORE</span>
+                  <span className="text-[#7C3AED]">한국 스토어</span>
                 </div>
                 <h3 className="font-display text-2xl sm:text-3xl lg:text-4xl font-black text-[#1C1B1B] tracking-tight">
-                  Step Into The <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D6D] via-[#D946EF] to-[#7C3AED]">Korean Aesthetic Store</span>
+                  Step Into The <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D6D] via-[#D946EF] to-[#7C3AED]">Korean Store</span>
                 </h3>
                 <p className="mt-2 text-xs sm:text-sm text-[#574144] leading-relaxed">
-                  Minimalist Bodycon Maxis, Tailored Sheath Midis & Seoul Relaxed Shirts — 3 verified Korean categories with 2 curated fits each starting @ <span className="font-bold text-[#FF4D6D]">₹549</span>.
+                  Party & Evening Glam, Campus & Cafe Everyday, and Office & Weekend Brunch — curated western silhouettes, bodycon maxis & tailored fits starting @ <span className="font-bold text-[#FF4D6D]">₹549</span>.
                 </p>
 
                 {/* Quick pill tags */}
                 <div className="mt-4 flex flex-wrap items-center justify-center md:justify-start gap-2">
                   <span className="bg-white px-2.5 py-1 rounded-xl text-xs font-semibold text-[#9F1239] border border-[#FFCCD5]">
-                    ♡ Bodycon & Maxi From ₹599
+                    ♡ Party & Evening Glam
                   </span>
                   <span className="bg-white px-2.5 py-1 rounded-xl text-xs font-semibold text-[#6D28D9] border border-[#DDD6FE]">
-                    ✧ Tailored Sheaths From ₹699
+                    ✧ Campus & Cafe Everyday
                   </span>
                   <span className="bg-white px-2.5 py-1 rounded-xl text-xs font-semibold text-[#065F46] border border-[#A7F3D0]">
-                    🍃 Seoul Relaxed Shirts From ₹549
+                    🍃 Office & Weekend Brunch
                   </span>
                 </div>
               </div>
@@ -132,7 +132,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   type="button"
                   className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#FF4D6D] via-[#E11D48] to-[#BE123C] text-white text-xs sm:text-sm font-bold tracking-wider uppercase shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all duration-300 flex items-center gap-2 shrink-0"
                 >
-                  <span>Explore K-Store</span>
+                  <span>Explore Korean Store</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>

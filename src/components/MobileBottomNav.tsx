@@ -49,11 +49,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         <span className="font-body text-[11px] tracking-tight">Categories</span>
       </button>
 
-      {/* Tab: K-Store (Korean Store Highlight) */}
+      {/* Tab: Korean Store (Boutique Highlight) */}
       <button
         id="btn-nav-korean"
         onClick={() => setActiveTab('korean-store')}
-        className={`flex flex-col items-center justify-center transition-all duration-200 px-2.5 py-1 rounded-full relative ${
+        className={`flex flex-col items-center justify-center transition-all duration-200 px-2 py-1 rounded-full relative ${
           activeTab === 'korean-store'
             ? 'text-[#db2777] bg-[#fce7f3] font-bold scale-100 shadow-xs ring-1 ring-[#f472b6]/40'
             : 'text-[#db2777]/80 hover:bg-[#fdf2f8]'
@@ -65,7 +65,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             HOT
           </span>
         </div>
-        <span className="font-body text-[10px] font-bold tracking-tight text-[#db2777]">K-Store</span>
+        <span className="font-body text-[10px] font-bold tracking-tight text-[#db2777]">Korean Store</span>
       </button>
 
       {/* Tab: Alerts */}

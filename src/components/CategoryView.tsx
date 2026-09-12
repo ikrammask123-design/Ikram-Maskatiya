@@ -25,7 +25,7 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
   onAddToCart,
 }) => {
   const [selectedFabric, setSelectedFabric] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating'>('featured');
+  const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc' | 'rating' | 'featured'>('price-asc');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const fabrics = useMemo(() => {
@@ -67,21 +67,74 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
         return true;
       })
       .sort((a, b) => {
-        if (sortBy === 'price-asc') return a.price - b.price;
         if (sortBy === 'price-desc') return b.price - a.price;
         if (sortBy === 'rating') return b.rating - a.rating;
-        return 0; // featured default
+        return a.price - b.price; // Default: strictly low price to high price
       });
   }, [products, selectedCategory, selectedFabric, sortBy, searchQuery]);
 
   const categories: { id: CategoryId; label: string }[] = [
     { id: 'all', label: 'All Creations' },
-    { id: 'lehenga-choli', label: 'Lehenga Choli' },
-    { id: 'sarees', label: 'Sarees' },
     { id: 'kurtis', label: 'Kurtis' },
+    { id: 'sarees', label: 'Sarees' },
+    { id: 'lehenga-choli', label: 'Lehenga Choli' },
     { id: 'dresses', label: 'Dresses' },
     { id: 'accessories', label: 'Accessories' },
   ];
+
+  const CATEGORY_SECTIONS: {
+    id: CategoryId;
+    title: string;
+    subtitle: string;
+    tagline: string;
+  }[] = [
+    {
+      id: 'kurtis',
+      title: 'Kurtis & Suit Sets',
+      subtitle: 'Anarkali, Straight Silhouettes & Embroidered Cotton-Silk Ensembles',
+      tagline: 'Artisanal Weaves & Festive Sets',
+    },
+    {
+      id: 'sarees',
+      title: 'Sarees',
+      subtitle: 'Handloom, Kanjivaram, Organza & Pure Silk Masterpieces',
+      tagline: 'Timeless Drapes & Certified Zari',
+    },
+    {
+      id: 'lehenga-choli',
+      title: 'Lehenga Choli',
+      subtitle: 'Royal Bridal & Festive Semi-Stitched Kali Ensembles',
+      tagline: 'Heavy Resham & Gold Zari Craft',
+    },
+    {
+      id: 'dresses',
+      title: 'Dresses & Gowns',
+      subtitle: 'Contemporary Flowing Silhouettes, Ethnic Flared Gowns & Cape Ensembles',
+      tagline: 'Modern Elegance & Festive Flairs',
+    },
+    {
+      id: 'accessories',
+      title: 'Fine Accessories & Jewelry',
+      subtitle: 'Kundan Chokers, Temple Bangles & Handcrafted Potlis',
+      tagline: 'Handcrafted Heritage Accents',
+    },
+  ];
+
+  // Group products strictly by category when viewing All Creations
+  const categoryGroups = useMemo(() => {
+    return CATEGORY_SECTIONS.map((sec) => {
+      const items = filteredProducts.filter((p) => {
+        if (sec.id === 'lehenga-choli') {
+          return p.category === 'lehenga-choli' || p.category === 'Lehenga Choli';
+        }
+        return p.category === sec.id;
+      });
+      return {
+        ...sec,
+        products: items,
+      };
+    }).filter((group) => group.products.length > 0);
+  }, [filteredProducts]);
 
   // Featured cover details for Lehenga Choli
   const lehengaCoverProduct = useMemo(() => {
@@ -252,30 +305,111 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
               onChange={(e) => setSortBy(e.target.value as any)}
               className="bg-[#f6f3f2] border border-[#debfc2]/40 rounded-full px-3 py-1.5 text-xs font-medium text-[#1c1b1b] focus:outline-none cursor-pointer"
             >
-              <option value="featured">Featured Curations</option>
-              <option value="price-asc">Price: Low to High</option>
+              <option value="price-asc">Price: Low to High (Default)</option>
               <option value="price-desc">Price: High to Low</option>
               <option value="rating">Highest Rated</option>
+              <option value="featured">Featured Curations</option>
             </select>
           </div>
         </div>
       </div>
 
-      {/* Products Grid */}
-      {filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {filteredProducts.map((prod) => (
-            <ProductCard
-              key={prod.id}
-              product={prod}
-              currency={currency}
-              isWishlisted={wishlistIds.includes(prod.id)}
-              onToggleWishlist={onToggleWishlist}
-              onSelectProduct={onSelectProduct}
-              onAddToCart={onAddToCart}
-            />
-          ))}
+      {/* Selected Category Range Note */}
+      {selectedCategory !== 'all' && filteredProducts.length > 0 && (
+        <div className="mb-6 flex items-center justify-between flex-wrap gap-2 text-xs text-[#574144] bg-[#fed9e2]/25 border border-[#debfc2]/40 px-4 py-2.5 rounded-xl">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#6d0026]" />
+            <span className="font-semibold text-[#6d0026]">
+              {filteredProducts.length} Creations Available
+            </span>
+          </div>
+          <span className="text-[11px] font-medium text-[#1c1b1b]">
+            Sorted by Price: ₹{filteredProducts[0]?.price.toLocaleString('en-IN')} → ₹{filteredProducts[filteredProducts.length - 1]?.price.toLocaleString('en-IN')}
+          </span>
         </div>
+      )}
+
+      {/* Products Display: Grouped by category when "All Creations" is selected, or single category grid */}
+      {filteredProducts.length > 0 ? (
+        selectedCategory === 'all' ? (
+          <div className="space-y-12 sm:space-y-16">
+            {categoryGroups.map((group) => {
+              const minPrice = group.products[0]?.price;
+              const maxPrice = group.products[group.products.length - 1]?.price;
+              return (
+                <section key={group.id} id={`catalog-section-${group.id}`} className="scroll-mt-24">
+                  {/* Category Section Header */}
+                  <div className="bg-gradient-to-r from-[#fed9e2]/35 via-white to-[#fdf8f9] p-4 sm:p-5 rounded-2xl border border-[#debfc2]/40 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] sm:text-xs font-bold tracking-widest text-[#891738] uppercase">
+                          {group.tagline}
+                        </span>
+                      </div>
+                      <h3 className="font-display text-xl sm:text-2xl font-bold text-[#6d0026]">
+                        {group.title}
+                      </h3>
+                      <p className="text-xs text-[#574144] mt-0.5 font-body">
+                        {group.subtitle}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+                      <span className="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-[#debfc2]/50 text-xs font-semibold text-[#6d0026] shadow-xs">
+                        <span>{group.products.length} Designs</span>
+                        <span className="text-[#8a7174]">•</span>
+                        <span className="font-medium text-[#1c1b1b]">
+                          ₹{minPrice?.toLocaleString('en-IN')} – ₹{maxPrice?.toLocaleString('en-IN')} (Low to High)
+                        </span>
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory(group.id);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="text-xs font-bold text-[#6d0026] hover:text-white bg-[#fed9e2]/70 hover:bg-[#6d0026] px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>View Only {group.title.split(' ')[0]}</span>
+                        <span>→</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Grid of products for this category */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                    {group.products.map((prod) => (
+                      <ProductCard
+                        key={prod.id}
+                        product={prod}
+                        currency={currency}
+                        isWishlisted={wishlistIds.includes(prod.id)}
+                        onToggleWishlist={onToggleWishlist}
+                        onSelectProduct={onSelectProduct}
+                        onAddToCart={onAddToCart}
+                      />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {filteredProducts.map((prod) => (
+              <ProductCard
+                key={prod.id}
+                product={prod}
+                currency={currency}
+                isWishlisted={wishlistIds.includes(prod.id)}
+                onToggleWishlist={onToggleWishlist}
+                onSelectProduct={onSelectProduct}
+                onAddToCart={onAddToCart}
+              />
+            ))}
+          </div>
+        )
       ) : (
         <div className="text-center py-20 bg-white rounded-2xl border border-[#debfc2]/30 p-8">
           <Sparkles className="w-8 h-8 text-[#aa314e] mx-auto mb-3" />

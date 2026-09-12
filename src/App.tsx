@@ -74,6 +74,31 @@ export default function App() {
           setActiveTab('korean-store');
         }
       }
+
+      // Universal product deep link: ?product=<id> or #product-<id>
+      const prodParam = searchParams.get('product') || searchParams.get('p') || searchParams.get('item');
+      if (prodParam) {
+        const found = ALL_PRODUCTS.find(
+          (p) => p.id === prodParam || p.id.toLowerCase() === prodParam.toLowerCase()
+        );
+        if (found) {
+          setSelectedProductModal(found);
+          if (found.isKoreanStore || found.category === 'k-store') {
+            setActiveTab('korean-store');
+          }
+        }
+      } else if (hash.startsWith('#product-') || hash.startsWith('#item-')) {
+        const idFromHash = hash.replace('#product-', '').replace('#item-', '');
+        const found = ALL_PRODUCTS.find(
+          (p) => p.id === idFromHash || p.id.toLowerCase() === idFromHash.toLowerCase()
+        );
+        if (found) {
+          setSelectedProductModal(found);
+          if (found.isKoreanStore || found.category === 'k-store') {
+            setActiveTab('korean-store');
+          }
+        }
+      }
       const trackParam = searchParams.get('track') || searchParams.get('order');
       if (trackParam) {
         setTrackOrderIdForModal(trackParam.toUpperCase());
