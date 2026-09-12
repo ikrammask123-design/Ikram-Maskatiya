@@ -137,35 +137,55 @@ export async function syncOrdersWithServer(): Promise<StoreOrder[]> {
   }
   isSyncingWithServer = true;
   try {
-    // 1. Fetch live orders from Firestore
-    const querySnapshot = await getDocs(collection(db, 'orders'));
-    const firestoreOrders: StoreOrder[] = [];
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data() as StoreOrder;
-      if (data && data.id && !data.isDemo && !DEMO_ORDER_IDS.has(data.id)) {
-        firestoreOrders.push(data);
-      }
-    });
-
-    const local = getStoredOrders();
     const map = new Map<string, StoreOrder>();
 
-    for (const o of firestoreOrders) {
-      map.set(o.id, o);
+    // 1. Try to fetch live orders from Firestore with timeout protection
+    let fetchedFromFirestore = false;
+    try {
+      const fetchFirestore = getDocs(collection(db, 'orders'));
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Firestore sync timeout')), 4000)
+      );
+      const querySnapshot: any = await Promise.race([fetchFirestore, timeoutPromise]);
+      querySnapshot.forEach((docSnap: any) => {
+        const data = docSnap.data() as StoreOrder;
+        if (data && data.id && !data.isDemo && !DEMO_ORDER_IDS.has(data.id)) {
+          map.set(data.id, data);
+        }
+      });
+      fetchedFromFirestore = true;
+    } catch {
+      // Gracefully fall back if Firestore is offline or timeout
     }
 
-    // 2. Check if local has any orders not in Firestore (e.g. from prior checkout session)
+    // 2. Fetch from Express central store (/api/orders) to ensure full synchronization
+    try {
+      const res = await fetch('/api/orders');
+      if (res.ok) {
+        const json = await res.json();
+        if (json && Array.isArray(json.orders)) {
+          for (const o of json.orders) {
+            if (o && o.id && !o.isDemo && !DEMO_ORDER_IDS.has(o.id) && !map.has(o.id)) {
+              map.set(o.id, o);
+            }
+          }
+        }
+      }
+    } catch {
+      // Local fallback
+    }
+
+    // 3. Merge local stored orders
+    const local = getStoredOrders();
     const unsyncedLocals = local.filter((o) => !o.isDemo && !DEMO_ORDER_IDS.has(o.id) && !map.has(o.id));
     for (const unsynced of unsyncedLocals) {
       map.set(unsynced.id, unsynced);
-      try {
-        await setDoc(doc(db, 'orders', unsynced.id), cleanForFirestore(unsynced));
-      } catch (err) {
-        console.warn('Failed to upload unsynced order to Firestore:', err);
+      if (fetchedFromFirestore) {
+        setDoc(doc(db, 'orders', unsynced.id), cleanForFirestore(unsynced)).catch(() => {});
       }
     }
 
-    // 3. Fallback sync to express endpoint
+    // 4. Background bulk-sync to express endpoint
     try {
       fetch('/api/orders/bulk-sync', {
         method: 'POST',
@@ -181,8 +201,7 @@ export async function syncOrdersWithServer(): Promise<StoreOrder[]> {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
     window.dispatchEvent(new CustomEvent('zevioza_order_updated', { detail: merged }));
     return merged;
-  } catch (err) {
-    console.warn('Firestore sync failed, falling back to local cache:', err);
+  } catch {
     return getStoredOrders();
   } finally {
     isSyncingWithServer = false;

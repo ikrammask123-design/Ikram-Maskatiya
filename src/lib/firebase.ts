@@ -5,13 +5,13 @@ import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// Use initializeFirestore with auto-detect long polling to resolve WebChannel stream timeouts in iframes and sandboxes
+// Force long polling to eliminate WebChannel streaming timeouts in sandboxed iframes & reverse proxies
 export const db = (() => {
   try {
     return initializeFirestore(
       app,
       {
-        experimentalAutoDetectLongPolling: true,
+        experimentalForceLongPolling: true,
       },
       firebaseConfig.firestoreDatabaseId
     );
@@ -33,40 +33,59 @@ export enum OperationType {
   WRITE = 'write',
 }
 
-export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo = {
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): FirestoreErrorInfo {
+  const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
       userId: auth.currentUser?.uid || null,
       email: auth.currentUser?.email || null,
+      emailVerified: auth.currentUser?.emailVerified || null,
+      isAnonymous: auth.currentUser?.isAnonymous || null,
+      tenantId: auth.currentUser?.tenantId || null,
+      providerInfo: auth.currentUser?.providerData?.map((p) => ({
+        providerId: p.providerId,
+        email: p.email,
+      })) || [],
     },
     operationType,
     path,
   };
-  console.warn('Firestore notice:', errInfo.error);
+  console.warn('Firestore Error Notice: ', JSON.stringify(errInfo));
   return errInfo;
 }
 
-export async function testFirestoreConnection(): Promise<boolean> {
+// Validate connection to Firestore on initial boot
+export async function testConnection(): Promise<boolean> {
   try {
-    // 5-second timeout guard to prevent 10s blocking warnings
-    const fetchPromise = getDocFromServer(doc(db, 'test', 'connection'));
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Connection check timeout')), 5000)
-    );
-    await Promise.race([fetchPromise, timeoutPromise]);
+    await getDocFromServer(doc(db, 'test', 'connection'));
     return true;
   } catch (error) {
     if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn('Firebase client operates in offline cache mode.');
+      console.warn('Firestore offline notice: operates with local cache until online.');
     }
     return false;
   }
 }
 
-// Initiate non-blocking deferred connection test after page settles
 if (typeof window !== 'undefined') {
-  setTimeout(() => {
-    testFirestoreConnection().catch(() => {});
-  }, 1500);
+  testConnection().catch(() => {});
 }
+
+export const testFirestoreConnection = testConnection;

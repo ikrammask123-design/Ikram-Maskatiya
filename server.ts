@@ -10,16 +10,8 @@ import {
 } from './server/shiprocket';
 
 // Safely derive directory name in both ESM (tsx) and CJS (bundled esbuild) environments
-const serverFilename =
-  typeof __filename !== 'undefined'
-    ? __filename
-    : typeof import.meta !== 'undefined' && (import.meta as any).url
-    ? fileURLToPath((import.meta as any).url)
-    : process.cwd();
-const serverDirname =
-  typeof __dirname !== 'undefined'
-    ? __dirname
-    : path.dirname(serverFilename);
+const serverFilename = typeof __filename !== 'undefined' ? __filename : process.cwd();
+const serverDirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(serverFilename);
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');

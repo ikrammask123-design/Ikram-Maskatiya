@@ -77,7 +77,7 @@ export const CategoryView: React.FC<CategoryViewProps> = ({
   const categories: { id: CategoryId; label: string }[] = [
     { id: 'all', label: 'All Creations' },
     { id: 'lehenga-choli', label: 'Lehenga Choli' },
-    { id: 'sarees', label: 'Silk Sarees' },
+    { id: 'sarees', label: 'Sarees' },
     { id: 'kurtis', label: 'Kurtis' },
     { id: 'dresses', label: 'Dresses' },
     { id: 'accessories', label: 'Accessories' },
