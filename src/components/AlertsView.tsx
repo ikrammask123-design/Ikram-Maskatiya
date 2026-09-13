@@ -1,19 +1,11 @@
-import React, { useState } from 'react';
-import { NotificationItem } from '../types';
-import {
-  Bell,
-  Sparkles,
-  PackageCheck,
-  Calendar,
-  Tag,
-  CheckCheck,
-  ChevronRight,
-} from 'lucide-react';
+import React from 'react';
+import { Bell, CheckCheck, Sparkles, Package, Gift, ArrowRight } from 'lucide-react';
+import { NotificationItem, CategoryId } from '../types';
 
 interface AlertsViewProps {
   notifications: NotificationItem[];
   onMarkAllRead: () => void;
-  onSelectCategory: (cat: any) => void;
+  onSelectCategory: (category: CategoryId) => void;
 }
 
 export const AlertsView: React.FC<AlertsViewProps> = ({
@@ -21,100 +13,120 @@ export const AlertsView: React.FC<AlertsViewProps> = ({
   onMarkAllRead,
   onSelectCategory,
 }) => {
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const getIcon = (type: NotificationItem['type']) => {
+    switch (type) {
+      case 'order':
+        return <Package className="w-4 h-4 text-[#891738]" />;
+      case 'drop':
+        return <Sparkles className="w-4 h-4 text-[#d97706]" />;
+      case 'offer':
+        return <Gift className="w-4 h-4 text-[#16a34a]" />;
+      case 'invitation':
+      default:
+        return <Bell className="w-4 h-4 text-[#6d0026]" />;
+    }
+  };
 
-  const filtered = notifications.filter((n) => (filter === 'unread' ? !n.read : true));
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <div id="alerts-view-page" className="py-8 md:py-12 px-5 md:px-16 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-6 border-b border-[#debfc2]/40 mb-6">
         <div>
-          <span className="text-xs font-semibold text-[#891738] uppercase tracking-[0.2em] block font-body">
-            BOUTIQUE DISPATCH & SALON UPDATES
+          <span className="text-[10px] tracking-widest uppercase font-bold text-[#891738]">
+            Exclusive Dispatch & Updates
           </span>
-          <h2 className="font-display text-2xl md:text-3xl font-bold text-[#6d0026]">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#6d0026]">
             Notifications & Alerts
-          </h2>
+          </h1>
         </div>
 
-        <button
-          onClick={onMarkAllRead}
-          className="text-xs text-[#6d0026] hover:text-[#8e1b3b] font-semibold flex items-center gap-1.5 py-1 px-3 bg-[#ffd9dd]/50 hover:bg-[#ffd9dd] rounded-full transition-colors"
-        >
-          <CheckCheck className="w-3.5 h-3.5" />
-          Mark all read
-        </button>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-            filter === 'all'
-              ? 'bg-[#6d0026] text-white shadow-xs'
-              : 'bg-[#f0eded] text-[#574144] hover:bg-[#fed9e2]/50'
-          }`}
-        >
-          All Alerts ({notifications.length})
-        </button>
-        <button
-          onClick={() => setFilter('unread')}
-          className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-            filter === 'unread'
-              ? 'bg-[#6d0026] text-white shadow-xs'
-              : 'bg-[#f0eded] text-[#574144] hover:bg-[#fed9e2]/50'
-          }`}
-        >
-          Unread ({notifications.filter((n) => !n.read).length})
-        </button>
+        {unreadCount > 0 && (
+          <button
+            type="button"
+            onClick={onMarkAllRead}
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#6d0026] hover:text-[#891738] bg-[#fed9e2]/40 hover:bg-[#fed9e2] px-3.5 py-1.5 rounded-full transition-all cursor-pointer"
+          >
+            <CheckCheck className="w-3.5 h-3.5" />
+            <span>Mark all read</span>
+          </button>
+        )}
       </div>
 
       {/* List */}
-      <div className="flex flex-col gap-3.5">
-        {filtered.map((item) => (
-          <div
-            key={item.id}
-            className={`p-4 sm:p-5 rounded-xl border transition-all ${
-              !item.read
-                ? 'bg-white border-[#debfc2] shadow-xs'
-                : 'bg-[#fcf9f8] border-[#debfc2]/20 opacity-85'
-            } flex items-start gap-4`}
-          >
+      <div className="space-y-3">
+        {notifications.length > 0 ? (
+          notifications.map((item) => (
             <div
-              className={`p-2.5 rounded-full shrink-0 ${
-                item.type === 'drop'
-                  ? 'bg-[#fed9e2] text-[#6d0026]'
-                  : item.type === 'order'
-                  ? 'bg-emerald-100 text-emerald-800'
-                  : item.type === 'invitation'
-                  ? 'bg-[#ffdea5] text-[#453000]'
-                  : 'bg-[#ffd9dd] text-[#891738]'
+              key={item.id}
+              className={`p-4 rounded-2xl border transition-all duration-200 flex items-start gap-3.5 ${
+                item.read
+                  ? 'bg-white/80 border-[#debfc2]/30 text-[#574144]'
+                  : 'bg-white border-[#fed9e2] shadow-xs ring-1 ring-[#fed9e2]/50'
               }`}
             >
-              {item.type === 'drop' && <Sparkles className="w-4 h-4" />}
-              {item.type === 'order' && <PackageCheck className="w-4 h-4" />}
-              {item.type === 'invitation' && <Calendar className="w-4 h-4" />}
-              {item.type === 'offer' && <Tag className="w-4 h-4" />}
-            </div>
-
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-1">
-                <h4 className="font-display text-sm sm:text-base font-semibold text-[#1c1b1b]">
-                  {item.title}
-                </h4>
-                <span className="text-[11px] text-[#8a7174]">{item.time}</span>
+              <div className="w-9 h-9 rounded-xl bg-[#fed9e2]/30 border border-[#debfc2]/40 flex items-center justify-center shrink-0 mt-0.5">
+                {getIcon(item.type)}
               </div>
-              <p className="text-xs sm:text-sm text-[#574144] leading-relaxed">
-                {item.message}
-              </p>
-            </div>
 
-            {!item.read && (
-              <span className="w-2 h-2 rounded-full bg-[#aa314e] mt-2 shrink-0"></span>
-            )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="font-display font-bold text-sm text-[#1c1b1b]">
+                    {item.title}
+                  </h3>
+                  <span className="text-[11px] text-[#8a7174] shrink-0">{item.time}</span>
+                </div>
+                <p className="text-xs text-[#574144] mt-1 leading-relaxed">
+                  {item.message}
+                </p>
+              </div>
+
+              {!item.read && (
+                <span className="w-2 h-2 rounded-full bg-[#6d0026] shrink-0 mt-2" />
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-16 bg-white rounded-2xl border border-[#debfc2]/30">
+            <Bell className="w-8 h-8 text-[#debfc2] mx-auto mb-3" />
+            <p className="text-sm font-medium text-[#8a7174]">No notifications yet</p>
           </div>
-        ))}
+        )}
+      </div>
+
+      {/* Curated Recommendations Footer */}
+      <div className="mt-10 p-6 rounded-2xl bg-gradient-to-r from-[#fed9e2]/30 via-white to-[#fdf8f9] border border-[#debfc2]/40 text-center">
+        <h4 className="font-display text-base font-bold text-[#6d0026]">
+          Discover Our Latest Collections
+        </h4>
+        <p className="text-xs text-[#574144] mt-1 max-w-md mx-auto">
+          Explore pure handloom silk sarees, wedding lehengas, and artisanal ensembles.
+        </p>
+        <div className="mt-4 flex justify-center gap-2.5 flex-wrap">
+          <button
+            type="button"
+            onClick={() => onSelectCategory('sarees')}
+            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-[#6d0026] text-white hover:bg-[#891738] transition-all cursor-pointer flex items-center gap-1"
+          >
+            <span>Silk Sarees</span>
+            <ArrowRight className="w-3 h-3" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onSelectCategory('kurtis')}
+            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-white border border-[#debfc2] text-[#6d0026] hover:bg-[#fed9e2]/30 transition-all cursor-pointer"
+          >
+            <span>Kurtis & Suits</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onSelectCategory('lehenga-choli')}
+            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-white border border-[#debfc2] text-[#6d0026] hover:bg-[#fed9e2]/30 transition-all cursor-pointer"
+          >
+            <span>Lehengas</span>
+          </button>
+        </div>
       </div>
     </div>
   );
