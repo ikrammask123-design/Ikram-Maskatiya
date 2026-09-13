@@ -13,6 +13,7 @@ import { StylistModal } from './components/StylistModal';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { TrackOrderModal } from './components/TrackOrderModal';
 import { KoreanStoreView } from './components/KoreanStoreView';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { CategoryId, Product, CartItem, Currency, NotificationItem } from './types';
 import { PRODUCTS, INITIAL_NOTIFICATIONS } from './data/products';
 import { K_PRODUCTS } from './data/koreanStoreData';
@@ -452,6 +453,9 @@ export default function App() {
 
       {/* Floating 1-Click WhatsApp Support Widget */}
       <FloatingWhatsApp phoneNumber="918238023498" />
+
+      {/* Vercel Speed Insights */}
+      <SpeedInsights />
     </div>
   );
 }

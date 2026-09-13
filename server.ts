@@ -343,10 +343,7 @@ async function startServer() {
     }
   }) || path.join(process.cwd(), 'dist');
 
-  const hasDist = fs.existsSync(path.join(distPath, 'index.html'));
-  const isProduction = process.env.NODE_ENV === 'production' || hasDist;
-
-  if (!isProduction) {
+  if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -356,6 +353,10 @@ async function startServer() {
   } else {
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
+      // Prevent serving index.html for missing static assets or API calls
+      if (req.path.startsWith('/api/') || req.path.startsWith('/assets/') || path.extname(req.path)) {
+        return res.status(404).send('Not found');
+      }
       const indexFile = path.join(distPath, 'index.html');
       if (fs.existsSync(indexFile)) {
         res.sendFile(indexFile);
