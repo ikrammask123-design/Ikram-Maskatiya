@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Search, ShoppingBag, Heart, User, X, Sparkles, SlidersHorizontal, Truck } from 'lucide-react';
+import { Menu, Search, ShoppingBag, Heart, User, X, Sparkles, SlidersHorizontal, Truck, CheckCircle } from 'lucide-react';
 import { CategoryId, Currency } from '../types';
-import { CURRENCY_RATES } from '../data/products';
 import { Logo } from './Logo';
 import { getCurrentUser, AUTH_CHANGE_EVENT } from '../utils/authStorage';
 
@@ -59,14 +58,16 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      {/* Top Banner / Privilege Strip (Subtle & Elegant) */}
-      <div className="hidden sm:flex bg-[#6d0026] text-[#fed9e2] text-[11px] font-body tracking-widest uppercase py-1.5 px-4 justify-between items-center z-50 relative">
-        <div className="flex items-center gap-2 max-w-7xl mx-auto w-full justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-3 h-3 text-[#ffdea5]" />
-            <span>Autumn Silk Salon 2026 Live • Complimentary Express Shipping on Orders Over ₹2,000</span>
+      {/* Top Banner / Privilege Strip (Mobile & Desktop) */}
+      <div className="bg-[#6d0026] text-[#fed9e2] text-[10px] sm:text-[11px] font-body tracking-wider uppercase py-1.5 px-3 sm:px-4 z-50 relative">
+        <div className="max-w-[1360px] mx-auto w-full flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 truncate">
+            <Sparkles className="w-3 h-3 text-[#ffdea5] shrink-0" />
+            <span className="font-semibold truncate">
+              FREE SHIPPING IN INDIA ON ALL ORDERS ABOVE ₹1,499 • CASH ON DELIVERY (COD) AVAILABLE
+            </span>
           </div>
-          <div className="flex items-center gap-4 text-[10px]">
+          <div className="hidden sm:flex items-center gap-4 text-[10.5px] shrink-0">
             {onOpenTrackOrder && (
               <>
                 <button
@@ -91,20 +92,8 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>•</span>
               </>
             )}
-            <div className="flex items-center gap-1">
-              <span>Currency:</span>
-              <select
-                id="currency-top-strip"
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value as Currency)}
-                className="bg-transparent border-none text-[#ffdea5] font-semibold text-[10px] focus:outline-none cursor-pointer"
-              >
-                {Object.keys(CURRENCY_RATES).map((curr) => (
-                  <option key={curr} value={curr} className="text-[#1c1b1b]">
-                    {curr} ({CURRENCY_RATES[curr].symbol})
-                  </option>
-                ))}
-              </select>
+            <div className="flex items-center gap-1 text-[#ffdea5] font-semibold">
+              <span>🇮🇳 All Prices in INR (₹)</span>
             </div>
           </div>
         </div>
@@ -113,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Main App Bar Header (Exact design from video) */}
       <header
         id="main-header"
-        className="fixed top-0 sm:top-[28px] left-0 w-full z-40 bg-[#fcf9f8]/95 backdrop-blur-md border-b border-[#debfc2]/30 shadow-xs transition-all duration-200"
+        className="fixed top-[28px] sm:top-[28px] left-0 w-full z-40 bg-[#fcf9f8]/95 backdrop-blur-md border-b border-[#debfc2]/30 shadow-xs transition-all duration-200"
       >
         <div className="max-w-[1360px] mx-auto px-4 sm:px-8 h-16 sm:h-18 flex items-center justify-between gap-3 sm:gap-8">
           {/* 1. Left: Mobile Menu & Brand Logo */}
@@ -476,19 +465,15 @@ export const Header: React.FC<HeaderProps> = ({
                   Book Private Stylist
                 </button>
               )}
-              <div className="flex justify-between items-center py-2">
-                <span>Currency</span>
-                <select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value as Currency)}
-                  className="bg-transparent border border-[#debfc2] rounded-md px-2 py-1 text-xs font-semibold"
-                >
-                  {Object.keys(CURRENCY_RATES).map((curr) => (
-                    <option key={curr} value={curr}>
-                      {curr} ({CURRENCY_RATES[curr].symbol})
-                    </option>
-                  ))}
-                </select>
+              <div className="flex justify-between items-center py-2 bg-[#fdf2e9] px-3 rounded-lg border border-[#fed7aa]">
+                <span className="font-semibold text-[#7c2d12]">🇮🇳 Store Currency</span>
+                <span className="font-bold text-[#9a3412] text-xs bg-white px-2 py-0.5 rounded border border-[#fed7aa]">
+                  Strictly INR (₹)
+                </span>
+              </div>
+              <div className="text-[11px] text-emerald-800 font-semibold bg-emerald-50 p-2.5 rounded-lg border border-emerald-200 flex items-center gap-1.5">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Cash On Delivery (COD) Available Across India</span>
               </div>
             </div>
           </div>

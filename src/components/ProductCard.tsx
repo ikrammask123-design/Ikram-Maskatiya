@@ -2,20 +2,9 @@ import React, { useState } from 'react';
 import { Heart, ShoppingBag, Star, Sparkles, Check, Share2 } from 'lucide-react';
 import { Product, Currency } from '../types';
 
-export const formatPrice = (price: number, currency: Currency = 'INR'): string => {
-  switch (currency) {
-    case 'USD':
-      return `$${(price / 83).toFixed(2)}`;
-    case 'EUR':
-      return `€${(price / 90).toFixed(2)}`;
-    case 'GBP':
-      return `£${(price / 105).toFixed(2)}`;
-    case 'AED':
-      return `AED ${(price / 22.6).toFixed(0)}`;
-    case 'INR':
-    default:
-      return `₹${price.toLocaleString('en-IN')}`;
-  }
+export const formatPrice = (price: number, _currency?: Currency): string => {
+  // Pure site strictly formatted in Indian Rupees (₹)
+  return `₹${Math.round(price).toLocaleString('en-IN')}`;
 };
 
 interface ProductCardProps {
@@ -177,6 +166,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 </span>
               )}
             </div>
+            <span className="text-[10px] font-semibold text-emerald-700 flex items-center gap-0.5 mt-0.5">
+              <span>COD Available</span>
+            </span>
           </div>
 
           <button

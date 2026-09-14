@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, FileText, CheckCircle, Shield } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileText, CheckCircle, Shield, Truck } from 'lucide-react';
 import { Product } from '../types';
 
 interface FlipkartProductDetailsProps {
@@ -12,6 +12,10 @@ export const FlipkartProductDetails: React.FC<FlipkartProductDetailsProps> = ({ 
   // Extract specs
   const specs = product.specs || {};
   const entries: [string, string][] = [];
+
+  // Prominently include user-specified delivery & COD in specifications
+  entries.push(['Delivery Timeline', 'Dispatch in 24 Hours | Delivery in 4–6 Days']);
+  entries.push(['Payment Methods', 'Cash On Delivery (COD) Available Across India']);
 
   if (product.fabric) entries.push(['Fabric', product.fabric]);
   if (product.weave) entries.push(['Weave / Work', product.weave]);
@@ -60,6 +64,11 @@ export const FlipkartProductDetails: React.FC<FlipkartProductDetailsProps> = ({ 
 
       {isOpen && (
         <div className="p-4 border-t border-[#debfc2]/30 space-y-3 animate-fadeIn text-xs">
+          <div className="flex items-center gap-2 p-2.5 bg-[#fef8f0] border border-[#fed7aa] rounded-lg text-xs text-[#9a3412] font-semibold">
+            <Truck className="w-4 h-4 text-[#ea580c] shrink-0" />
+            <span>Dispatch in 24 Hours | Delivery in 4–6 Days</span>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {entries.map(([key, value]) => (
               <div

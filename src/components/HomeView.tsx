@@ -36,6 +36,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onOpenKoreanStore,
 }) => {
   const [secretTapCount, setSecretTapCount] = React.useState(0);
+  const [featuredFilter, setFeaturedFilter] = React.useState<'all' | 'sarees' | 'kurtis' | 'lehenga-choli' | 'dresses'>('all');
 
   const handleSecretTap = () => {
     setSecretTapCount((prev) => {
@@ -50,6 +51,25 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   // Flagship saree
   const flagshipSaree = products.find((p) => p.id === 'zv-01') || products[0];
+
+  // Featured Collection direct bestselling products
+  const featuredProducts = React.useMemo(() => {
+    if (featuredFilter === 'all') {
+      return products.slice(0, 12);
+    }
+    const filtered = products.filter((p) => {
+      if (featuredFilter === 'kurtis') {
+        return (
+          p.category === 'kurtis' ||
+          (p.categoryLabel && p.categoryLabel.toLowerCase().includes('kurti')) ||
+          (p.categoryLabel && p.categoryLabel.toLowerCase().includes('top'))
+        );
+      }
+      return p.category === featuredFilter;
+    });
+    // Fallback if empty so the section is NEVER empty
+    return filtered.length > 0 ? filtered : products.slice(0, 8);
+  }, [products, featuredFilter]);
 
   return (
     <div id="home-view" className="flex flex-col w-full bg-[#fdf9f7]">
@@ -141,33 +161,52 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </section>
       )}
 
-      {/* 4. MOST LOVED -> Trending Now Section */}
+      {/* 4. Featured Collection Section (Bestselling Sarees, Tops, Kurtis & Lehengas) */}
       <section
-        id="trending-now-section"
+        id="featured-collection-section"
         className="py-14 sm:py-20 px-4 sm:px-8 max-w-[1360px] mx-auto w-full"
       >
-        <div className="flex flex-row items-end justify-between mb-8 sm:mb-10 gap-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 sm:mb-10 gap-4">
           <div>
             <span className="font-body text-xs sm:text-sm font-bold text-[#891738] tracking-[0.25em] uppercase mb-1.5 block">
-              MOST LOVED
+              BESTSELLING CATALOG
             </span>
             <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#1c1b1b] tracking-tight">
-              Trending Now
+              Featured Collection
             </h2>
+            <p className="text-xs sm:text-sm text-[#574144] mt-1.5">
+              Handpicked festive sarees, trending tops, anarkali kurtis, and royal lehengas.
+            </p>
           </div>
 
-          <button
-            onClick={() => onSelectCategory('all')}
-            className="text-xs sm:text-sm font-bold text-[#6d0026] hover:text-[#8e1b3b] tracking-wider uppercase flex items-center gap-1.5 group cursor-pointer"
-          >
-            <span>View all</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
+          {/* Quick Filter Tabs for Tops, Sarees, Kurtis & Lehengas */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
+            {[
+              { id: 'all', label: 'All Bestsellers' },
+              { id: 'sarees', label: 'Bestselling Sarees' },
+              { id: 'kurtis', label: 'Tops & Kurtis' },
+              { id: 'lehenga-choli', label: 'Lehenga Cholis' },
+              { id: 'dresses', label: 'Festive Gowns' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setFeaturedFilter(tab.id as any)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  featuredFilter === tab.id
+                    ? 'bg-[#6d0026] text-white shadow-xs'
+                    : 'bg-[#f6f3f2] text-[#574144] hover:bg-[#ede8e7] border border-[#debfc2]/40'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Product Cards Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-          {products.slice(0, 8).map((product) => (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          {featuredProducts.map((product) => (
             <ProductCard
               key={product.id}
               product={product}
@@ -178,6 +217,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
               onAddToCart={onAddToCart}
             />
           ))}
+        </div>
+
+        {/* Explore More Footer */}
+        <div className="mt-8 sm:mt-10 flex justify-center">
+          <button
+            type="button"
+            onClick={() => onSelectCategory(featuredFilter === 'all' ? 'all' : (featuredFilter as CategoryId))}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-[#6d0026] text-[#6d0026] hover:bg-[#6d0026] hover:text-white text-xs font-bold tracking-widest uppercase transition-all shadow-xs cursor-pointer"
+          >
+            <span>Explore Full {featuredFilter === 'all' ? 'Collection' : featuredFilter.toUpperCase()}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
       </section>
 

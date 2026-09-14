@@ -632,6 +632,26 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
           {/* Action Buttons */}
           <div className="pt-4 border-t border-[#f0eded]">
+            {/* Prominent COD Badge requested by user */}
+            <div className="mb-3.5 bg-emerald-50 border border-emerald-300/80 rounded-xl p-3 flex items-center justify-between shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[11px] shrink-0 shadow-sm">
+                  COD
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                    <span>Cash On Delivery (COD) Available Across India</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-800 font-medium mt-0.5">
+                    Pay cash or UPI directly when your parcel arrives at your doorstep
+                  </p>
+                </div>
+              </div>
+              <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider bg-emerald-700 text-white px-2.5 py-1 rounded-full shrink-0">
+                100% Verified
+              </span>
+            </div>
+
             {addedToast && (
               <div className="mb-3 text-center text-xs font-semibold text-emerald-800 bg-emerald-50 py-2 rounded-lg flex items-center justify-center gap-1.5 animate-fadeIn">
                 <Check className="w-4 h-4 text-emerald-600" />
@@ -682,6 +702,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </span>
                 )}
               </button>
+            </div>
+
+            {/* Delivery Timeline Mention */}
+            <div className="mt-3 flex items-center justify-between gap-2 p-2.5 bg-[#fdf2e9] border border-[#fed7aa] rounded-xl text-xs">
+              <div className="flex items-center gap-2 text-[#9a3412] font-semibold">
+                <Truck className="w-4 h-4 text-[#ea580c] shrink-0" />
+                <span>Dispatch in 24 Hours | Delivery in 4–6 Days</span>
+              </div>
+              <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded">
+                ✓ COD Active
+              </span>
             </div>
 
             {/* WhatsApp Direct Inquiry with Direct Product Link */}

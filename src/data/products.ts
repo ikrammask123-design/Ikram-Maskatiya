@@ -3024,18 +3024,26 @@ export const PRODUCTS: Product[] = [...RAW_PRODUCTS].sort((a, b) => {
 
 export const CURRENCY_RATES: Record<string, { symbol: string; rate: number }> = {
   INR: { symbol: '₹', rate: 1 },
-  USD: { symbol: '$', rate: 0.012 },
-  EUR: { symbol: '€', rate: 0.011 },
-  GBP: { symbol: '£', rate: 0.0094 },
-  AED: { symbol: 'AED ', rate: 0.044 },
 };
 
 export const TRUST_BADGES = [
   {
     id: 'badge-shipping',
     title: 'Free Shipping',
-    subtitle: 'On orders over ₹2,000',
+    subtitle: 'On orders over ₹1,499',
     icon: 'local_shipping',
+  },
+  {
+    id: 'badge-cod',
+    title: 'Cash On Delivery',
+    subtitle: 'Available across India',
+    icon: 'payments',
+  },
+  {
+    id: 'badge-dispatch',
+    title: 'Fast Dispatch',
+    subtitle: 'Dispatches in 24 Hours',
+    icon: 'schedule',
   },
   {
     id: 'badge-returns',

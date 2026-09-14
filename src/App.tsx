@@ -317,7 +317,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full pt-16 sm:pt-[108px] pb-20 md:pb-0">
+      <main className="flex-1 w-full pt-[92px] sm:pt-[106px] pb-20 md:pb-0">
         {activeTab === 'home' && (
           <HomeView
             products={PRODUCTS}
