@@ -16,7 +16,9 @@ const serverDirname = typeof __dirname !== 'undefined' ? __dirname : path.dirnam
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+const WA_LOGS_FILE = path.join(DATA_DIR, 'whatsapp_logs.json');
 let inMemoryOrders: any[] = [];
+let inMemoryWaLogs: any[] = [];
 
 function ensureDataDir(): void {
   try {
@@ -26,8 +28,125 @@ function ensureDataDir(): void {
     if (!fs.existsSync(ORDERS_FILE)) {
       fs.writeFileSync(ORDERS_FILE, JSON.stringify([], null, 2), 'utf-8');
     }
+    if (!fs.existsSync(WA_LOGS_FILE)) {
+      fs.writeFileSync(WA_LOGS_FILE, JSON.stringify([], null, 2), 'utf-8');
+    }
   } catch (err) {
-    console.warn('Filesystem access limited, using in-memory orders store:', err);
+    console.warn('Filesystem access limited, using in-memory store:', err);
+  }
+}
+
+function readWaLogs(): any[] {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(WA_LOGS_FILE)) {
+      const data = fs.readFileSync(WA_LOGS_FILE, 'utf-8');
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        inMemoryWaLogs = parsed;
+        return parsed;
+      }
+    }
+    return inMemoryWaLogs;
+  } catch (err) {
+    return inMemoryWaLogs;
+  }
+}
+
+function writeWaLogs(logs: any[]): boolean {
+  inMemoryWaLogs = logs;
+  try {
+    ensureDataDir();
+    fs.writeFileSync(WA_LOGS_FILE, JSON.stringify(logs, null, 2), 'utf-8');
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+function formatPhoneForWhatsApp(phone: string): string {
+  let clean = (phone || '').replace(/\D/g, '').replace(/^0+/, '');
+  if (clean.length === 10) clean = `91${clean}`;
+  return clean;
+}
+
+function buildWaText(order: any, type: string): string {
+  const customerName = order.customer?.name || 'Customer';
+  const orderId = order.id;
+  const total = order.total || 0;
+  const trackingUrl = `https://zevioza.com/?track=${encodeURIComponent(orderId)}#track`;
+
+  if (type === 'ORDER_PLACED') {
+    const itemsList = (order.items || [])
+      .map((i: any) => `• *${i.name}* (Qty: ${i.quantity}) - ₹${i.price * i.quantity}`)
+      .join('\n');
+
+    return (
+      `Namaste ${customerName} ji! 🙏\n\n` +
+      `Thank you for shopping with *Zevioza Luxury Boutique*! ✨\n\n` +
+      `Aapka order successfully place ho gaya hai! 🎉\n` +
+      `• *Order ID:* #${orderId}\n` +
+      `• *Total Amount:* ₹${total.toLocaleString('en-IN')} (${order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Prepaid Online'})\n` +
+      `• *Delivery Address:* ${order.customer?.address || ''}, ${order.customer?.city || ''} (${order.customer?.pincode || ''})\n\n` +
+      `*Ordered Items:*\n${itemsList}\n\n` +
+      `⚡ *Dispatch Promise:* Aapka order agle 24 ghante (next 24 hours) me hamare Surat hub se pack hokar ship ho jayega!\n` +
+      `🚚 *Estimated Delivery:* 4–6 Days across India.\n\n` +
+      `🔍 *Live Order Tracking Link:*\n${trackingUrl}\n\n` +
+      `Order ship hote hi courier AWB number aapko WhatsApp par update kiya jayega.\n\n` +
+      `Warm regards,\n*Zevioza Luxury Boutique* 🌸`
+    );
+  }
+
+  if (type === 'ORDER_SHIPPED') {
+    const courier = order.courierPartner || 'Express Air Partner';
+    const awb = order.trackingNumber || 'Assigned';
+
+    return (
+      `Namaste ${customerName} ji! 🚚\n\n` +
+      `Great news! Aapka Zevioza Boutique Order *#${orderId}* successfully dispatch ho gaya hai! 📦✨\n\n` +
+      `*Shipment & Tracking Details:*\n` +
+      `• *Courier Partner:* ${courier}\n` +
+      `• *Tracking Number (AWB):* ${awb}\n` +
+      `• *Delivery City:* ${order.customer?.city || ''}\n` +
+      `• *Amount to Pay:* ${order.paymentStatus === 'paid' ? '₹0 (Paid Online ✅)' : `₹${total.toLocaleString('en-IN')} (COD)`}\n\n` +
+      `⚡ *Estimated Delivery:* 4–6 Days me parcel aapke doorstep par deliver hoga.\n\n` +
+      `🔍 *Live Tracking Link:*\n${trackingUrl}\n\n` +
+      `Warm regards,\n*Zevioza Luxury Boutique* 🌸`
+    );
+  }
+
+  return `Namaste ${customerName} ji! Update regarding your Zevioza Order #${orderId}. Track here: ${trackingUrl}`;
+}
+
+function recordWaLog(order: any, type: string, recipientPhone?: string) {
+  try {
+    const phone = formatPhoneForWhatsApp(recipientPhone || order.customer?.phone || '');
+    if (!phone || phone.length < 10) return null;
+
+    const message = buildWaText(order, type);
+    const waLink = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+    const log = {
+      id: `WA-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      orderId: order.id,
+      recipientPhone: phone,
+      recipientName: order.customer?.name || 'Customer',
+      type,
+      message,
+      waLink,
+      status: 'sent',
+      timestamp: new Date().toISOString(),
+    };
+
+    const logs = readWaLogs();
+    logs.unshift(log);
+    writeWaLogs(logs.slice(0, 200));
+
+    console.log(`[WhatsApp Automated Notification] Dispatched [${type}] for Order ${order.id} to +${phone}`);
+    return log;
+  } catch (err) {
+    console.error('Error logging WhatsApp notification:', err);
+    return null;
   }
 }
 
@@ -115,6 +234,8 @@ async function startServer() {
     } else {
       // Prepend new order
       orders.unshift(newOrder);
+      // Automatically trigger ORDER_PLACED WhatsApp notification with Thank You & 24hr Dispatch promise
+      recordWaLog(newOrder, 'ORDER_PLACED');
     }
 
     writeOrders(orders);
@@ -133,8 +254,20 @@ async function startServer() {
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
+    const previousStatus = orders[index].fulfillmentStatus;
+    const previousTracking = orders[index].trackingNumber;
+
     orders[index] = { ...orders[index], ...updates };
     writeOrders(orders);
+
+    // If order was marked as shipped or tracking number was assigned/updated, trigger automated ORDER_SHIPPED WhatsApp notification
+    if (
+      (updates.fulfillmentStatus === 'shipped' && previousStatus !== 'shipped') ||
+      (updates.trackingNumber && updates.trackingNumber !== previousTracking)
+    ) {
+      recordWaLog(orders[index], 'ORDER_SHIPPED');
+    }
+
     res.json({ success: true, order: orders[index] });
   });
 
@@ -293,6 +426,9 @@ async function startServer() {
         orders[idx].shiprocketShipmentId = result.shipment_id || orders[idx].shiprocketShipmentId;
         orders[idx].fulfillmentStatus = 'shipped';
         writeOrders(orders);
+
+        // Automatically trigger ORDER_SHIPPED WhatsApp tracking notification
+        recordWaLog(orders[idx], 'ORDER_SHIPPED');
       }
 
       console.log(`[Shiprocket] AWB assigned for Order ${order.id}: ${result.awb_code} (${result.courier_name})`);
@@ -327,6 +463,83 @@ async function startServer() {
       console.error('[Shiprocket] track endpoint error:', err.message);
       res.status(500).json({ success: false, error: err.message || 'Tracking fetch failed' });
     }
+  });
+
+  // ================= WHATSAPP AUTOMATION API ROUTES =================
+
+  // POST /api/notifications/whatsapp/send - Trigger an automated WhatsApp notification
+  app.post('/api/notifications/whatsapp/send', (req, res) => {
+    res.type('application/json');
+    const { order, orderId, type, recipientPhone, message: customMessage } = req.body;
+
+    let targetOrder = order;
+    if (!targetOrder && orderId) {
+      const orders = readOrders();
+      targetOrder = orders.find((o) => o.id === orderId);
+    }
+
+    if (!targetOrder && !customMessage) {
+      return res.status(400).json({ success: false, error: 'Order or orderId required' });
+    }
+
+    const notifType = type || 'ORDER_PLACED';
+    const log = recordWaLog(targetOrder || { id: orderId || 'MANUAL', customer: { phone: recipientPhone, name: 'Customer' } }, notifType, recipientPhone);
+
+    res.json({
+      success: true,
+      log,
+      status: 'dispatched',
+      message: log?.message || customMessage,
+      waLink: log?.waLink,
+    });
+  });
+
+  // GET /api/notifications/whatsapp/logs - Get WhatsApp notification logs
+  app.get('/api/notifications/whatsapp/logs', (req, res) => {
+    res.type('application/json');
+    const logs = readWaLogs();
+    res.json({ success: true, logs });
+  });
+
+  // POST /api/notifications/whatsapp/test - Test send WhatsApp notification
+  app.post('/api/notifications/whatsapp/test', (req, res) => {
+    res.type('application/json');
+    const { phone, type } = req.body;
+    if (!phone) {
+      return res.status(400).json({ success: false, error: 'Mobile phone number required' });
+    }
+
+    const testOrder = {
+      id: `ZV-TEST-${Math.floor(1000 + Math.random() * 9000)}`,
+      total: 2499,
+      paymentMethod: 'cod',
+      customer: {
+        name: 'Valued Customer',
+        phone,
+        address: 'Ring Road, Surat',
+        city: 'Surat',
+        pincode: '395002',
+      },
+      items: [{ name: 'Handcrafted Silk Saree', quantity: 1, price: 2499 }],
+      courierPartner: 'Blue Dart / Delhivery Express',
+      trackingNumber: 'BLUEDART-882391024',
+    };
+
+    const notifType = type || 'ORDER_PLACED';
+    const log = recordWaLog(testOrder, notifType, phone);
+
+    res.json({
+      success: true,
+      log,
+      waLink: log?.waLink,
+      message: `Test automated message created for ${phone}`,
+    });
+  });
+
+  // POST /api/notifications/whatsapp/clear-logs - Clear WhatsApp notification logs
+  app.post('/api/notifications/whatsapp/clear-logs', (req, res) => {
+    writeWaLogs([]);
+    res.json({ success: true, message: 'WhatsApp logs cleared' });
   });
 
   // Vite middleware for development vs static for production

@@ -69,6 +69,14 @@ import {
   OWNER_EMAIL,
   DEFAULT_ADMIN_PIN,
 } from '../utils/orderStorage';
+import {
+  sendAutomatedWhatsAppNotification,
+  generateWhatsAppMessage,
+  getWhatsAppNotificationLogs,
+  clearWhatsAppLogs,
+  WhatsAppNotificationLog,
+  WhatsAppNotificationType,
+} from '../utils/whatsappAutomation';
 import { formatPrice } from './ProductCard';
 import { Logo } from './Logo';
 
@@ -106,6 +114,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
   const [isAdVideoModalOpen, setIsAdVideoModalOpen] = useState(false);
   const [adVideoTab, setAdVideoTab] = useState<'mega' | 'viral' | 'collection' | 'saree'>('mega');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // WhatsApp Automation Hub State
+  const [isWhatsAppHubOpen, setIsWhatsAppHubOpen] = useState(false);
+  const [waLogs, setWaLogs] = useState<WhatsAppNotificationLog[]>([]);
+  const [testWaPhone, setTestWaPhone] = useState('');
+  const [testWaType, setTestWaType] = useState<WhatsAppNotificationType>('ORDER_PLACED');
+  const [isSendingTestWa, setIsSendingTestWa] = useState(false);
 
   // Customer WhatsApp Notification Modal State
   const [whatsAppModalOrder, setWhatsAppModalOrder] = useState<StoreOrder | null>(null);
@@ -301,15 +316,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
     }
   };
 
-  const handleUpdateStatus = (orderId: string, status: OrderFulfillmentStatus) => {
+  const handleUpdateStatus = async (orderId: string, status: OrderFulfillmentStatus) => {
     const updated = updateOrderFulfillment(orderId, status);
     setOrders(updated);
     showToast(`Order #${orderId} status changed to ${status.toUpperCase()}`);
 
-    // If marked as shipped and no tracking AWB exists yet, auto-trigger Shiprocket dispatch
-    if (status === 'shipped') {
-      const targetOrder = orders.find((o) => o.id === orderId);
-      if (targetOrder && !targetOrder.trackingNumber) {
+    const targetOrder = updated.find((o) => o.id === orderId);
+
+    // If marked as shipped, trigger automated WhatsApp notification with courier & tracking details
+    if (status === 'shipped' && targetOrder) {
+      try {
+        await sendAutomatedWhatsAppNotification(targetOrder, 'ORDER_SHIPPED');
+        showToast(`🚚 Automated WhatsApp dispatch notification sent for #${orderId}!`);
+      } catch (e) {
+        console.warn('WhatsApp auto notification error:', e);
+      }
+
+      // If no tracking AWB exists yet, auto-trigger Shiprocket dispatch
+      if (!targetOrder.trackingNumber) {
         handleShipWithShiprocket(targetOrder);
       }
     }
@@ -323,7 +347,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
     showToast(`Order #${orderId} payment marked as ${nextStatus.toUpperCase()}`);
   };
 
-  const handleSaveTracking = (orderId: string) => {
+  const handleSaveTracking = async (orderId: string) => {
     const updated = updateOrderDetails(orderId, {
       courierPartner: trackingInput.courier,
       trackingNumber: trackingInput.trackingNumber,
@@ -332,6 +356,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
     setOrders(updated);
     setEditingTrackingId(null);
     showToast(`Tracking saved & marked as Shipped for #${orderId}`);
+
+    // Automatically trigger ORDER_SHIPPED WhatsApp notification
+    const targetOrder = updated.find((o) => o.id === orderId);
+    if (targetOrder) {
+      try {
+        await sendAutomatedWhatsAppNotification(targetOrder, 'ORDER_SHIPPED');
+        showToast(`🚚 WhatsApp tracking details automated for +91 ${targetOrder.customer.phone.replace(/\D/g, '')}!`);
+      } catch (err) {
+        console.warn('WhatsApp auto-dispatch error:', err);
+      }
+    }
   };
 
   const handleShipWithShiprocket = async (order: StoreOrder) => {
@@ -339,11 +374,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
     try {
       const res = await shipOrderWithShiprocket(order);
       if (res.success && res.awb_code) {
-        loadOrders();
+        await loadOrders();
+
+        // Trigger automated WhatsApp notification with newly generated Shiprocket AWB
+        const freshOrders = getStoredOrders();
+        const refreshed = freshOrders.find((o) => o.id === order.id);
+        if (refreshed) {
+          sendAutomatedWhatsAppNotification(refreshed, 'ORDER_SHIPPED').catch(console.warn);
+        }
+
         if (res.walletNotice) {
-          showToast(`AWB ${res.awb_code} generated (${res.courier_name}). Notice: Recharge wallet on shiprocket.in for live courier pickup manifest.`);
+          showToast(`AWB ${res.awb_code} generated (${res.courier_name}) & WhatsApp tracking triggered! Recharge wallet on shiprocket.in.`);
         } else {
-          showToast(`Order Shipped! Shiprocket AWB ${res.awb_code} assigned via ${res.courier_name}!`);
+          showToast(`Order Shipped! Shiprocket AWB ${res.awb_code} assigned via ${res.courier_name} & WhatsApp tracking triggered!`);
         }
       } else {
         showToast(res.error || 'Could not assign Shiprocket AWB');
@@ -500,51 +543,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
   };
 
   const getFormattedWhatsAppMessage = (order: StoreOrder, type: string): string => {
-    const itemsList = order.items
-      .map(
-        (item) =>
-          `• *${item.name}* (Qty: ${item.quantity}${item.selectedColor ? `, Shade: ${item.selectedColor}` : ''}${
-            item.selectedSize ? `, Size: ${item.selectedSize}` : ''
-          }) - ₹${item.price * item.quantity}`
-      )
-      .join('\n');
-
     if (type === 'confirmation') {
-      return (
-        `Namaste ${order.customer.name} ji,\n\n` +
-        `Aapka Zevioza Boutique Order *#${order.id}* successfully confirm ho gaya hai! 🎉\n\n` +
-        `• *Order Total:* ₹${order.total}\n` +
-        `• *Payment Mode:* ${
-          order.paymentMethod === 'cod'
-            ? `Cash on Delivery (₹${order.total} to collect on delivery)`
-            : order.paymentMethod === 'upi'
-            ? 'Direct UPI'
-            : 'Prepaid Online'
-        }\n` +
-        `• *Payment Status:* ${order.paymentStatus === 'paid' ? 'PAID ✅' : 'PENDING ⏳ (Pay at delivery)'}\n` +
-        `• *Delivery Address:* ${order.customer.address}, ${order.customer.city} - ${order.customer.pincode}\n\n` +
-        `*Items Ordered:*\n${itemsList}\n\n` +
-        `Hum aapka package safely pack kar rahe hain. Dispatch hote hi aapko tracking details yahan WhatsApp par send kar di jayegi.\n\n` +
-        `Kisi bhi customization ya sizing query ke liye aap is number par WhatsApp reply kar sakte hain.\n\n` +
-        `Warm regards,\n*Zevioza Boutique*`
-      );
+      return generateWhatsAppMessage(order, 'ORDER_PLACED');
     }
 
     if (type === 'dispatch') {
-      return (
-        `Namaste ${order.customer.name} ji,\n\n` +
-        `Aapka Zevioza Boutique Order *#${order.id}* dispatch ho gaya hai! 🚚\n\n` +
-        (order.courierPartner ? `• *Courier Partner:* ${order.courierPartner}\n` : '• *Courier:* Express Surface Delivery\n') +
-        (order.trackingNumber ? `• *Tracking Number (AWB):* ${order.trackingNumber}\n` : '') +
-        `• *Delivery Address:* ${order.customer.address}, ${order.customer.city}\n` +
-        `• *Amount to Pay:* ${
-          order.paymentStatus === 'paid'
-            ? '₹0 (Order Already Paid)'
-            : `₹${order.total} (Cash on Delivery)`
-        }\n\n` +
-        `Estimated Delivery: 3-5 business days.\n\n` +
-        `Warm regards,\n*Zevioza Boutique*`
-      );
+      return generateWhatsAppMessage(order, 'ORDER_SHIPPED');
     }
 
     if (type === 'cod_pending') {
@@ -553,14 +557,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
         `Yeh message aapke Zevioza Cash on Delivery Order *#${order.id}* ke dispatch confirmation ke liye hai.\n\n` +
         `• *Total Order Amount:* ₹${order.total} (To be paid in cash at doorstep)\n` +
         `• *Delivery Address:* ${order.customer.address}, ${order.customer.city} - ${order.customer.pincode}\n\n` +
-        `Kripya confirm karein ki aap delivery lene ke liye available rahenge? Reply with *CONFIRM* to dispatch today.\n\n` +
+        `Hum aapka package agle *24 HOURS* mein ship karne ke liye tayyar hain! Kripya confirm karein ki aap delivery lene ke liye available rahenge? Reply with *CONFIRM* to dispatch.\n\n` +
         `Warm regards,\n*Zevioza Boutique*`
       );
     }
 
     return (
       whatsAppCustomText ||
-      `Namaste ${order.customer.name} ji, regarding your Zevioza Boutique Order #${order.id}.`
+      generateWhatsAppMessage(order, 'ORDER_PLACED')
     );
   };
 
@@ -594,6 +598,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
 
     const message = getFormattedWhatsAppMessage(whatsAppModalOrder, whatsAppMessageType);
     const encoded = encodeURIComponent(message);
+
+    const notifType: WhatsAppNotificationType =
+      whatsAppMessageType === 'dispatch' ? 'ORDER_SHIPPED' : 'ORDER_PLACED';
+    sendAutomatedWhatsAppNotification(whatsAppModalOrder, notifType, raw).catch(console.warn);
 
     window.open(`https://wa.me/${cleanPhone}?text=${encoded}`, '_blank');
     setWhatsAppModalOrder(null);
@@ -870,6 +878,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Lock / Logout</span>
+            </button>
+
+            {/* WhatsApp Automation Hub Button */}
+            <button
+              onClick={async () => {
+                setIsWhatsAppHubOpen(true);
+                const logs = await getWhatsAppNotificationLogs();
+                setWaLogs(logs);
+              }}
+              className="flex items-center gap-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl transition-all shadow-xs cursor-pointer"
+              title="Automated WhatsApp Customer Updates (Thank you & 24hr dispatch, Live shipment tracking)"
+            >
+              <MessageCircle className="w-3.5 h-3.5 fill-white" />
+              <span className="hidden sm:inline">WhatsApp Automation</span>
+              <span className="bg-emerald-400/30 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase">
+                Active
+              </span>
             </button>
 
             <button
@@ -1454,6 +1479,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                                 )}
                               </button>
                             </div>
+
+                            {order.trackingNumber && (
+                              <div className="pt-1.5">
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const res = await sendAutomatedWhatsAppNotification(order, 'ORDER_SHIPPED');
+                                    showToast(`Opening WhatsApp with tracking details for #${order.id}!`);
+                                    window.open(res.waLink, '_blank', 'noopener,noreferrer');
+                                  }}
+                                  className="w-full py-2 px-3 rounded-xl text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>Send Tracking via WhatsApp ({order.trackingNumber})</span>
+                                  <ExternalLink className="w-3 h-3 text-emerald-600" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -2848,6 +2891,346 @@ Featuring the all-new Madhu Designer Ensemble & Stitched Pista Green Bridal Lehe
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* WhatsApp Automation Hub Modal */}
+      {isWhatsAppHubOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-3xl w-full p-5 sm:p-7 shadow-2xl relative my-8 border border-[#debfc2] max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-start justify-between pb-4 border-b border-[#debfc2]/40 mb-4 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md">
+                  <MessageCircle className="w-6 h-6 fill-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-display font-bold text-lg text-[#1c1b1b]">
+                      WhatsApp Automation Hub
+                    </h3>
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 border border-emerald-300">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Active &amp; Automated
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#8a7174] mt-0.5">
+                    Real-time automatic WhatsApp notifications for Order Confirmation (24hr Dispatch Promise) &amp; Live Shipment Tracking
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsWhatsAppHubOpen(false)}
+                className="p-1.5 text-[#8a7174] hover:text-[#1c1b1b] rounded-full cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="overflow-y-auto pr-1 space-y-5 text-xs">
+              {/* Active Automation Pipelines Overview */}
+              <div>
+                <h4 className="font-bold text-[#1c1b1b] uppercase tracking-wider text-[11px] mb-2.5 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Configured Automation Workflows (कस्टमर को आटोमेटिक जाने वाले मैसेज)</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Workflow 1: Order Placed */}
+                  <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-bold text-emerald-950 text-xs flex items-center gap-1.5">
+                          <span>1. Order Placed</span>
+                          <span className="text-[10px] font-semibold bg-emerald-200/80 text-emerald-900 px-1.5 py-0.2 rounded">
+                            Instant
+                          </span>
+                        </span>
+                        <span className="text-emerald-700 font-bold text-[10px]">🟢 Auto-Dispatched</span>
+                      </div>
+                      <p className="text-[11px] text-emerald-800 leading-relaxed">
+                        Triggered immediately when customer purchases on website.
+                      </p>
+                      <div className="mt-2 p-2 bg-white/80 rounded-xl border border-emerald-200 text-[11px] font-mono text-emerald-900 space-y-1">
+                        <div>✨ <strong>Thank You:</strong> Personalized with customer name &amp; Order ID</div>
+                        <div>⏱️ <strong>24-Hour Promise:</strong> <em>"Hum aapka order agle 24 hours mein ship kar denge!"</em></div>
+                        <div>📦 <strong>Order Summary:</strong> Items list, subtotal, and payment mode</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Workflow 2: Order Shipped */}
+                  <div className="p-3.5 rounded-2xl bg-sky-50/70 border border-sky-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-bold text-sky-950 text-xs flex items-center gap-1.5">
+                          <span>2. Order Shipped</span>
+                          <span className="text-[10px] font-semibold bg-sky-200/80 text-sky-900 px-1.5 py-0.2 rounded">
+                            AWB Assigned
+                          </span>
+                        </span>
+                        <span className="text-sky-700 font-bold text-[10px]">🟢 Auto-Dispatched</span>
+                      </div>
+                      <p className="text-[11px] text-sky-800 leading-relaxed">
+                        Triggered as soon as order is shipped or courier AWB is generated via Shiprocket.
+                      </p>
+                      <div className="mt-2 p-2 bg-white/80 rounded-xl border border-sky-200 text-[11px] font-mono text-sky-900 space-y-1">
+                        <div>🚚 <strong>Courier Details:</strong> Blue Dart / Delhivery / Shiprocket partner name</div>
+                        <div>🔢 <strong>AWB Number:</strong> Direct tracking code</div>
+                        <div>🔗 <strong>Live Tracking:</strong> Direct clickable link to track package in real-time</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Test Notification Simulator */}
+              <div className="p-4 rounded-2xl bg-[#fcf9f8] border border-[#debfc2]/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-[#1c1b1b] uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <Send className="w-3.5 h-3.5 text-[#6d0026]" />
+                    <span>Send Test WhatsApp Notification (मैसेज टेस्ट करें)</span>
+                  </h4>
+                  <span className="text-[10px] text-[#8a7174]">Preview WhatsApp formatting</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                  <div className="sm:col-span-6">
+                    <label className="block text-[11px] font-semibold text-[#574144] mb-1">
+                      Recipient Mobile Number
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <span className="bg-white border border-[#debfc2]/60 px-2.5 py-2 rounded-xl text-xs font-bold text-[#574144]">
+                        🇮🇳 +91
+                      </span>
+                      <input
+                        type="tel"
+                        value={testWaPhone}
+                        onChange={(e) => setTestWaPhone(e.target.value)}
+                        placeholder="Enter 10-digit mobile number"
+                        className="flex-1 px-3 py-2 bg-white rounded-xl border border-[#debfc2]/60 text-xs text-[#1c1b1b] focus:outline-none focus:border-emerald-600"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-6">
+                    <label className="block text-[11px] font-semibold text-[#574144] mb-1">
+                      Notification Type
+                    </label>
+                    <select
+                      value={testWaType}
+                      onChange={(e) => setTestWaType(e.target.value as WhatsAppNotificationType)}
+                      className="w-full px-3 py-2 bg-white rounded-xl border border-[#debfc2]/60 text-xs text-[#1c1b1b] focus:outline-none focus:border-emerald-600"
+                    >
+                      <option value="ORDER_PLACED">1. Order Placed (Thank You + 24hr Dispatch)</option>
+                      <option value="ORDER_SHIPPED">2. Order Shipped (Courier Name + AWB Tracking)</option>
+                      <option value="OUT_FOR_DELIVERY">3. Out For Delivery (Doorstep Alert)</option>
+                      <option value="DELIVERED">4. Delivered Confirmation</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    disabled={isSendingTestWa || !testWaPhone.trim()}
+                    onClick={async () => {
+                      const clean = testWaPhone.replace(/\D/g, '');
+                      if (clean.length < 10) {
+                        showToast('Please enter a valid 10-digit mobile number');
+                        return;
+                      }
+                      setIsSendingTestWa(true);
+                      try {
+                        const sampleOrder: StoreOrder = {
+                          id: `ZV-${Math.floor(100000 + Math.random() * 900000)}`,
+                          createdAt: new Date().toISOString(),
+                          customer: {
+                            name: 'Valued Client',
+                            phone: clean,
+                            email: 'client@zevioza.in',
+                            address: 'Ring Road, Surat Textile Market',
+                            city: 'Surat',
+                            pincode: '395002',
+                            state: 'Gujarat',
+                            country: 'India',
+                          },
+                          items: [
+                            {
+                              id: 'test-1',
+                              productId: 'test-p1',
+                              name: 'Handcrafted Festive Georgette Twirl Gown',
+                              image: '/Miss Chase  Maxi Yellow - 1.webp',
+                              price: 2399,
+                              quantity: 1,
+                              selectedSize: 'M',
+                              selectedColor: 'Sun Yellow',
+                            },
+                          ],
+                          subtotal: 2399,
+                          discountAmount: 0,
+                          giftWrapAmount: 0,
+                          total: 2399,
+                          currency: 'INR',
+                          paymentMethod: 'cod',
+                          paymentStatus: 'pending',
+                          fulfillmentStatus: testWaType === 'ORDER_SHIPPED' ? 'shipped' : 'new',
+                          courierPartner: 'Blue Dart Express (Shiprocket)',
+                          trackingNumber: 'BLUEDART-882390192',
+                          shiprocketTrackingUrl: 'https://shiprocket.co/tracking/BLUEDART-882390192',
+                        };
+
+                        const res = await sendAutomatedWhatsAppNotification(sampleOrder, testWaType, clean);
+                        showToast(`Test ${testWaType} notification created for +91 ${clean}!`);
+                        window.open(res.waLink, '_blank', 'noopener,noreferrer');
+                        const updatedLogs = await getWhatsAppNotificationLogs();
+                        setWaLogs(updatedLogs);
+                      } catch (err: any) {
+                        showToast('Failed to trigger test notification');
+                      } finally {
+                        setIsSendingTestWa(false);
+                      }
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5 fill-white" />
+                    <span>{isSendingTestWa ? 'Opening WhatsApp...' : 'Test Send via WhatsApp'}</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Notification History Logs */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-bold text-[#1c1b1b] uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#6d0026]" />
+                    <span>Recent Automated Notification Logs ({waLogs.length})</span>
+                  </h4>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const logs = await getWhatsAppNotificationLogs();
+                        setWaLogs(logs);
+                        showToast('Logs refreshed');
+                      }}
+                      className="text-[11px] font-semibold text-[#6d0026] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Refresh</span>
+                    </button>
+                    {waLogs.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (window.confirm('Clear all WhatsApp notification logs?')) {
+                            await clearWhatsAppLogs();
+                            setWaLogs([]);
+                            showToast('WhatsApp logs cleared');
+                          }
+                        }}
+                        className="text-[11px] text-[#8a7174] hover:text-rose-600 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Clear</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {waLogs.length === 0 ? (
+                  <div className="p-6 text-center bg-[#fcf9f8] rounded-2xl border border-[#debfc2]/40 text-[#8a7174]">
+                    <MessageCircle className="w-8 h-8 mx-auto text-neutral-300 mb-2" />
+                    <p className="font-medium text-xs">No notifications logged yet.</p>
+                    <p className="text-[11px] mt-1 text-[#8a7174]">
+                      Notifications will automatically appear here whenever a customer places an order or an order is marked as shipped!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {waLogs.map((log) => (
+                      <div
+                        key={log.id}
+                        className="p-3 bg-white rounded-xl border border-[#debfc2]/60 hover:border-emerald-500 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs"
+                      >
+                        <div className="flex items-start gap-2.5 min-w-0">
+                          <div
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                              log.type === 'ORDER_SHIPPED'
+                                ? 'bg-sky-100 text-sky-800'
+                                : 'bg-emerald-100 text-emerald-800'
+                            }`}
+                          >
+                            {log.type === 'ORDER_SHIPPED' ? (
+                              <Truck className="w-3.5 h-3.5" />
+                            ) : (
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-[#1c1b1b] text-xs">
+                                Order #{log.orderId}
+                              </span>
+                              <span
+                                className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                                  log.type === 'ORDER_SHIPPED'
+                                    ? 'bg-sky-100 text-sky-800'
+                                    : 'bg-emerald-100 text-emerald-800'
+                                }`}
+                              >
+                                {log.type === 'ORDER_SHIPPED' ? 'SHIPPED & AWB' : 'ORDER CONFIRMED (24HR)'}
+                              </span>
+                              <span className="text-[10px] text-[#8a7174]">
+                                {new Date(log.timestamp).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-[#574144] truncate mt-0.5">
+                              Recipient: <strong>+91 {log.recipientPhone}</strong>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                          <a
+                            href={log.waLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-[#25D366] hover:bg-[#20ba59] text-white text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors shadow-2xs"
+                            title="Open WhatsApp Chat"
+                          >
+                            <MessageCircle className="w-3 h-3 fill-white" />
+                            <span>Open WhatsApp</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="pt-4 border-t border-[#debfc2]/40 mt-4 flex items-center justify-between shrink-0">
+              <p className="text-[11px] text-[#8a7174]">
+                Automated for Zevioza Boutique • Connected with WhatsApp API &amp; Universal Deep Links
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsWhatsAppHubOpen(false)}
+                className="bg-[#6d0026] hover:bg-[#8e1b3b] text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}

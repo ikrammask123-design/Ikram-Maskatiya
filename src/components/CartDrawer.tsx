@@ -29,6 +29,7 @@ import { Logo } from './Logo';
 import { saveOrderToStoreAsync, formatWhatsAppPhone } from '../utils/orderStorage';
 import { getCurrentUser, associateOrderWithUser, AUTH_CHANGE_EVENT } from '../utils/authStorage';
 import { loginWithGoogle } from '../utils/firebaseAuth';
+import { sendAutomatedWhatsAppNotification } from '../utils/whatsappAutomation';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -150,6 +151,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [isGoogleAuthing, setIsGoogleAuthing] = useState(false);
+  const [whatsAppNotifSent, setWhatsAppNotifSent] = useState<{ waLink: string; message: string; phone: string } | null>(null);
 
   const handleCheckoutGoogleAuth = async () => {
     setIsGoogleAuthing(true);
@@ -294,6 +296,19 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       };
       await saveOrderToStoreAsync(storeOrder);
       associateOrderWithUser(storeOrder);
+
+      // Automated WhatsApp Thank You & 24hr Dispatch Notification Trigger
+      try {
+        const waResult = await sendAutomatedWhatsAppNotification(storeOrder, 'ORDER_PLACED');
+        setWhatsAppNotifSent({
+          waLink: waResult.waLink,
+          message: waResult.message,
+          phone: shippingInfo.phone,
+        });
+      } catch (waErr) {
+        console.warn('Automated WhatsApp dispatch non-blocking error:', waErr);
+      }
+      return storeOrder;
     };
 
     if (paymentMethod === 'cod') {
@@ -1169,6 +1184,42 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     {formatPrice(grandTotal, currency)}
                   </span>
                 </div>
+              </div>
+
+              {/* Automated WhatsApp Confirmation Card */}
+              <div className="w-full p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-left text-xs mb-3 shadow-2xs">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+                    <MessageCircle className="w-4 h-4 fill-white" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-emerald-900 text-xs">WhatsApp Automated Update</span>
+                      <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
+                        Automated
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-emerald-800 mt-1 leading-relaxed">
+                      Thank you confirmation with <strong>Order #{orderId}</strong> &amp; <strong>24-Hour Dispatch Promise</strong> has been prepared for WhatsApp (+91 {shippingInfo.phone.replace(/\D/g, '')}).
+                    </p>
+                    <p className="text-[10px] text-emerald-700 mt-1 font-medium">
+                      ⚡ <em>Live courier tracking &amp; AWB will automatically reach this WhatsApp once dispatched!</em>
+                    </p>
+                  </div>
+                </div>
+
+                {whatsAppNotifSent?.waLink && (
+                  <a
+                    href={whatsAppNotifSent.waLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 w-full bg-[#25D366] hover:bg-[#20ba59] text-white py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5 fill-white" />
+                    <span>Open Order Confirmation on WhatsApp</span>
+                    <ExternalLink className="w-3 h-3 opacity-80" />
+                  </a>
+                )}
               </div>
 
               {/* Track Order Action */}

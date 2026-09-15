@@ -1,0 +1,24 @@
+[
+  {
+    "id": "WA-1789506391223-737",
+    "orderId": "TEST-101",
+    "recipientPhone": "919876543210",
+    "recipientName": "Pooja Sharma",
+    "type": "ORDER_SHIPPED",
+    "message": "Namaste Pooja Sharma ji! 🚚\n\nGreat news! Aapka Zevioza Boutique Order *#TEST-101* successfully dispatch ho gaya hai! 📦✨\n\n*Shipment & Tracking Details:*\n• *Courier Partner:* Blue Dart Express\n• *Tracking Number (AWB):* BD-99882211\n• *Delivery City:* Mumbai\n• *Amount to Pay:* ₹0 (Paid Online ✅)\n\n⚡ *Estimated Delivery:* 4–6 Days me parcel aapke doorstep par deliver hoga.\n\n🔍 *Live Tracking Link:*\nhttps://zevioza.com/?track=TEST-101#track\n\nWarm regards,\n*Zevioza Luxury Boutique* 🌸",
+    "waLink": "https://wa.me/919876543210?text=Namaste%20Pooja%20Sharma%20ji!%20%F0%9F%9A%9A%0A%0AGreat%20news!%20Aapka%20Zevioza%20Boutique%20Order%20*%23TEST-101*%20successfully%20dispatch%20ho%20gaya%20hai!%20%F0%9F%93%A6%E2%9C%A8%0A%0A*Shipment%20%26%20Tracking%20Details%3A*%0A%E2%80%A2%20*Courier%20Partner%3A*%20Blue%20Dart%20Express%0A%E2%80%A2%20*Tracking%20Number%20(AWB)%3A*%20BD-99882211%0A%E2%80%A2%20*Delivery%20City%3A*%20Mumbai%0A%E2%80%A2%20*Amount%20to%20Pay%3A*%20%E2%82%B90%20(Paid%20Online%20%E2%9C%85)%0A%0A%E2%9A%A1%20*Estimated%20Delivery%3A*%204%E2%80%936%20Days%20me%20parcel%20aapke%20doorstep%20par%20deliver%20hoga.%0A%0A%F0%9F%94%8D%20*Live%20Tracking%20Link%3A*%0Ahttps%3A%2F%2Fzevioza.com%2F%3Ftrack%3DTEST-101%23track%0A%0AWarm%20regards%2C%0A*Zevioza%20Luxury%20Boutique*%20%F0%9F%8C%B8",
+    "status": "sent",
+    "timestamp": "2026-09-15T21:06:31.223Z"
+  },
+  {
+    "id": "WA-1789506383431-316",
+    "orderId": "TEST-101",
+    "recipientPhone": "919876543210",
+    "recipientName": "Customer",
+    "type": "ORDER_PLACED",
+    "message": "Namaste Customer ji! 🙏\n\nThank you for shopping with *Zevioza Luxury Boutique*! ✨\n\nAapka order successfully place ho gaya hai! 🎉\n• *Order ID:* #TEST-101\n• *Total Amount:* ₹0 (Prepaid Online)\n• *Delivery Address:* ,  ()\n\n*Ordered Items:*\n\n\n⚡ *Dispatch Promise:* Aapka order agle 24 ghante (next 24 hours) me hamare Surat hub se pack hokar ship ho jayega!\n🚚 *Estimated Delivery:* 4–6 Days across India.\n\n🔍 *Live Order Tracking Link:*\nhttps://zevioza.com/?track=TEST-101#track\n\nOrder ship hote hi courier AWB number aapko WhatsApp par update kiya jayega.\n\nWarm regards,\n*Zevioza Luxury Boutique* 🌸",
+    "waLink": "https://wa.me/919876543210?text=Namaste%20Customer%20ji!%20%F0%9F%99%8F%0A%0AThank%20you%20for%20shopping%20with%20*Zevioza%20Luxury%20Boutique*!%20%E2%9C%A8%0A%0AAapka%20order%20successfully%20place%20ho%20gaya%20hai!%20%F0%9F%8E%89%0A%E2%80%A2%20*Order%20ID%3A*%20%23TEST-101%0A%E2%80%A2%20*Total%20Amount%3A*%20%E2%82%B90%20(Prepaid%20Online)%0A%E2%80%A2%20*Delivery%20Address%3A*%20%2C%20%20()%0A%0A*Ordered%20Items%3A*%0A%0A%0A%E2%9A%A1%20*Dispatch%20Promise%3A*%20Aapka%20order%20agle%2024%20ghante%20(next%2024%20hours)%20me%20hamare%20Surat%20hub%20se%20pack%20hokar%20ship%20ho%20jayega!%0A%F0%9F%9A%9A%20*Estimated%20Delivery%3A*%204%E2%80%936%20Days%20across%20India.%0A%0A%F0%9F%94%8D%20*Live%20Order%20Tracking%20Link%3A*%0Ahttps%3A%2F%2Fzevioza.com%2F%3Ftrack%3DTEST-101%23track%0A%0AOrder%20ship%20hote%20hi%20courier%20AWB%20number%20aapko%20WhatsApp%20par%20update%20kiya%20jayega.%0A%0AWarm%20regards%2C%0A*Zevioza%20Luxury%20Boutique*%20%F0%9F%8C%B8",
+    "status": "sent",
+    "timestamp": "2026-09-15T21:06:23.431Z"
+  }
+]
