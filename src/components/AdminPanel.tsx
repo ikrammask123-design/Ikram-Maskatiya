@@ -167,7 +167,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
     setOrders(getStoredOrders());
     try {
       const serverList = await syncOrdersWithServer();
-      if (serverList && serverList.length > 0) {
+      if (Array.isArray(serverList)) {
         setOrders(serverList);
       }
     } catch (e) {
@@ -210,7 +210,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
     // Periodic cloud reconciliation fallback
     const pollTimer = setInterval(() => {
       syncOrdersWithServer().then((latest) => {
-        if (latest && latest.length > 0) {
+        if (Array.isArray(latest)) {
           setOrders(latest);
         }
       });
@@ -313,6 +313,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
       const remaining = clearAllDemoOrders();
       setOrders(remaining);
       showToast('All demo orders cleared! Showing only real orders.');
+    }
+  };
+
+  const handleClearAllOrders = () => {
+    if (window.confirm('Are you sure you want to delete ALL orders from the Admin Dashboard? This cannot be undone.')) {
+      const remaining = clearAllOrders();
+      setOrders(remaining);
+      showToast('All orders deleted successfully!');
     }
   };
 
@@ -925,6 +933,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
               <Download className="w-3.5 h-3.5 text-[#6d0026]" />
               <span className="hidden sm:inline">Export Excel/CSV</span>
             </button>
+
+            {orders.length > 0 && (
+              <button
+                onClick={handleClearAllOrders}
+                className="flex items-center gap-1.5 text-xs font-semibold bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-800 px-3 py-2 rounded-xl transition-all shadow-2xs cursor-pointer"
+                title="Delete all orders from dashboard"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-700" />
+                <span className="hidden sm:inline">Delete All Orders</span>
+              </button>
+            )}
 
             <button
               onClick={() => setIsManualOrderModalOpen(true)}

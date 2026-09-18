@@ -198,7 +198,7 @@ export const KoreanStoreView: React.FC<KoreanStoreViewProps> = ({
                   <span>3 KOREAN CATEGORIES</span>
                 </span>
                 <span className="text-[11px] text-[#7C3AED] font-mono font-extrabold bg-[#F3EEFF] px-2 py-0.5 rounded-full">
-                  15 VERIFIED FITS
+                  {K_PRODUCTS.length} VERIFIED FITS
                 </span>
               </div>
               <div className="text-xs text-[#574144] leading-relaxed">
@@ -642,7 +642,7 @@ export const KoreanStoreView: React.FC<KoreanStoreViewProps> = ({
             <div className="bg-gradient-to-r from-[#FDF4FF] via-[#FAF5FF] to-[#FAE8FF] p-4 sm:p-6 rounded-3xl border-2 border-[#F5D0FE] shadow-xs mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <img
-                  src="/PATTZALA Women Sheath Purple - 1.webp"
+                  src="/Miss Chase Women Blazer Dress Green Knee Length Dress1.webp"
                   alt="Office & Weekend Brunch"
                   className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover object-top border-2 border-white shadow-xs shrink-0"
                 />
@@ -659,7 +659,7 @@ export const KoreanStoreView: React.FC<KoreanStoreViewProps> = ({
                     Office & Weekend Brunch
                   </h2>
                   <p className="text-xs sm:text-sm text-[#574144] mt-1">
-                    Tailored desk-to-dinner sheath midis, elegant minimalist beige knits & boardroom presentation fits.
+                    Tailored desk-to-dinner sheath midis, blazer dresses, wrap fits, ankle flares, chic knit co-ords & ribbed bodycon fits.
                   </p>
                 </div>
               </div>

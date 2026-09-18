@@ -76,12 +76,20 @@ export default function App() {
         }
       }
 
+      // Helper to find product by id with legacy alias support
+      const findProductById = (idStr: string) => {
+        const clean = idStr.toLowerCase().trim();
+        return ALL_PRODUCTS.find(
+          (p) =>
+            p.id.toLowerCase() === clean ||
+            p.id.toLowerCase() === `k-${clean}`
+        );
+      };
+
       // Universal product deep link: ?product=<id> or #product-<id>
       const prodParam = searchParams.get('product') || searchParams.get('p') || searchParams.get('item');
       if (prodParam) {
-        const found = ALL_PRODUCTS.find(
-          (p) => p.id === prodParam || p.id.toLowerCase() === prodParam.toLowerCase()
-        );
+        const found = findProductById(prodParam);
         if (found) {
           setSelectedProductModal(found);
           if (found.isKoreanStore || found.category === 'k-store') {
@@ -90,9 +98,7 @@ export default function App() {
         }
       } else if (hash.startsWith('#product-') || hash.startsWith('#item-')) {
         const idFromHash = hash.replace('#product-', '').replace('#item-', '');
-        const found = ALL_PRODUCTS.find(
-          (p) => p.id === idFromHash || p.id.toLowerCase() === idFromHash.toLowerCase()
-        );
+        const found = findProductById(idFromHash);
         if (found) {
           setSelectedProductModal(found);
           if (found.isKoreanStore || found.category === 'k-store') {

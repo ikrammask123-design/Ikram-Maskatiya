@@ -13,45 +13,7 @@ import { directShiprocketDispatch } from './shiprocketDirect';
 
 const STORAGE_KEY = 'zevioza_store_orders_v1';
 
-export const INITIAL_ORDERS: StoreOrder[] = [
-  {
-    id: 'ZV-774802',
-    createdAt: '2026-09-06T12:15:00.000Z',
-    isDemo: false,
-    customer: {
-      name: 'Customer (Order ZV-774802)',
-      email: 'customer.zv774802@gmail.com',
-      phone: '+91 98250 00000',
-      address: 'Direct Storefront Checkout - Placed via Shared Link',
-      city: 'Surat',
-      state: 'Gujarat',
-      pincode: '395002',
-      country: 'India',
-    },
-    items: [
-      {
-        id: 'item-zv-774802-1',
-        productId: 'zv-dress-miss-chase-01',
-        name: 'Miss Chase Women Maxi Full Length Dress',
-        image: '/Miss Chase  Maxi Yellow - 1.webp',
-        price: 2399,
-        quantity: 1,
-        selectedSize: 'M',
-        selectedColor: 'Yellow',
-        notes: 'Order placed via storefront',
-      },
-    ],
-    subtotal: 2399,
-    discountAmount: 240,
-    giftWrapAmount: 0,
-    total: 2159,
-    currency: 'INR',
-    paymentMethod: 'cod',
-    paymentStatus: 'pending',
-    fulfillmentStatus: 'new',
-    adminNotes: 'COD Order: Collect ₹2,159 cash on delivery. Placed via storefront by customer.',
-  },
-];
+export const INITIAL_ORDERS: StoreOrder[] = [];
 
 const DEMO_CLEARED_KEY = 'zevioza_demo_cleared_v1';
 export const OWNER_EMAIL = 'ikrammask123@gmail.com';
@@ -59,7 +21,19 @@ export const DEFAULT_ADMIN_PIN = '9825'; // Master PIN: 9825 (or zevioza2026)
 const ADMIN_PIN_KEY = 'zevioza_admin_pin_v1';
 const ADMIN_AUTH_SESSION_KEY = 'zevioza_admin_auth_active';
 
-const DEMO_ORDER_IDS = new Set(['ZV-928410', 'ZV-849102', 'ZV-729011', 'ZV-610294', 'ZV-501928', 'ZV-TEST01']);
+const DEMO_ORDER_IDS = new Set([
+  'ZV-928410',
+  'ZV-849102',
+  'ZV-729011',
+  'ZV-610294',
+  'ZV-501928',
+  'ZV-TEST01',
+  'ZV-236526',
+  'ZV-343192',
+  'ZV-346370',
+  'ZV-613665',
+  'ZV-774802',
+]);
 
 let isSyncingWithServer = false;
 
@@ -211,6 +185,11 @@ export async function syncOrdersWithServer(): Promise<StoreOrder[]> {
 // Auto-trigger sync on initial load and window focus
 if (typeof window !== 'undefined') {
   setTimeout(() => {
+    // Proactively purge trial orders from Firestore
+    const trialIds = ['ZV-236526', 'ZV-343192', 'ZV-346370', 'ZV-613665', 'ZV-774802'];
+    trialIds.forEach((id) => {
+      deleteDoc(doc(db, 'orders', id)).catch(() => {});
+    });
     syncOrdersWithServer();
     syncAdminPinFromCloud();
   }, 100);
@@ -223,15 +202,15 @@ if (typeof window !== 'undefined') {
 export function getStoredOrders(): StoreOrder[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    const demoCleared = localStorage.getItem(DEMO_CLEARED_KEY) === 'true';
 
     if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const realOrders = parsed.filter((o: StoreOrder) => !o.isDemo && !DEMO_ORDER_IDS.has(o.id));
-        if (realOrders.length > 0 || demoCleared) {
-          return realOrders;
+      if (Array.isArray(parsed)) {
+        const filtered = parsed.filter((o: StoreOrder) => !o.isDemo && !DEMO_ORDER_IDS.has(o.id));
+        if (filtered.length !== parsed.length) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
         }
+        return filtered;
       }
     }
 
@@ -525,6 +504,16 @@ export function clearAllOrders(): StoreOrder[] {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
     localStorage.setItem(DEMO_CLEARED_KEY, 'true');
     window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
+
+    // Also delete from Firestore
+    getDocs(collection(db, 'orders')).then((snap) => {
+      snap.forEach((d) => {
+        deleteDoc(doc(db, 'orders', d.id)).catch(() => {});
+      });
+    }).catch(() => {});
+
+    fetch('/api/orders/all', { method: 'DELETE' }).catch((e) => console.warn('Failed to clear orders on server:', e));
+
     return [];
   } catch (e) {
     console.error('Failed to clear all orders', e);

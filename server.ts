@@ -156,7 +156,7 @@ function readOrders(): any[] {
     if (fs.existsSync(ORDERS_FILE)) {
       const data = fs.readFileSync(ORDERS_FILE, 'utf-8');
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         inMemoryOrders = parsed;
         return parsed;
       }
@@ -180,7 +180,19 @@ function writeOrders(orders: any[]): boolean {
   }
 }
 
-const DEMO_IDS = new Set(['ZV-928410', 'ZV-849102', 'ZV-729011', 'ZV-610294', 'ZV-501928', 'ZV-TEST01']);
+const DEMO_IDS = new Set([
+  'ZV-928410',
+  'ZV-849102',
+  'ZV-729011',
+  'ZV-610294',
+  'ZV-501928',
+  'ZV-TEST01',
+  'ZV-236526',
+  'ZV-343192',
+  'ZV-346370',
+  'ZV-613665',
+  'ZV-774802',
+]);
 
 async function startServer() {
   const app = express();
@@ -271,6 +283,20 @@ async function startServer() {
     res.json({ success: true, order: orders[index] });
   });
 
+  // DELETE /api/orders/all - Delete all orders (wipe orders database)
+  app.delete('/api/orders/all', (req, res) => {
+    writeOrders([]);
+    console.log(`[Order Central] All orders purged successfully.`);
+    res.json({ success: true, count: 0, orders: [] });
+  });
+
+  // POST /api/orders/clear-all - Also support POST to clear all orders
+  app.post('/api/orders/clear-all', (req, res) => {
+    writeOrders([]);
+    console.log(`[Order Central] All orders purged successfully.`);
+    res.json({ success: true, count: 0, orders: [] });
+  });
+
   // DELETE /api/orders/:id - Remove order
   app.delete('/api/orders/:id', (req, res) => {
     const { id } = req.params;
@@ -278,47 +304,6 @@ async function startServer() {
     const filtered = orders.filter((o) => o.id !== id);
     writeOrders(filtered);
     res.json({ success: true, remaining: filtered.length });
-  });
-
-  // POST /api/orders/bulk-sync - Merge client local orders into server database
-  app.post('/api/orders/bulk-sync', (req, res) => {
-    const { orders: clientOrders } = req.body;
-    if (!Array.isArray(clientOrders)) {
-      return res.status(400).json({ success: false, error: 'Array of orders expected' });
-    }
-
-    const serverOrders = readOrders();
-    const orderMap = new Map<string, any>();
-
-    // Server orders first (only real non-demo orders)
-    for (const order of serverOrders) {
-      if (!order.isDemo && !DEMO_IDS.has(order.id)) {
-        orderMap.set(order.id, order);
-      }
-    }
-
-    // Client orders (add if not present, but NEVER upload demo orders)
-    let addedCount = 0;
-    for (const order of clientOrders) {
-      if (order.isDemo || DEMO_IDS.has(order.id)) continue; // Skip demo orders
-      if (!orderMap.has(order.id)) {
-        orderMap.set(order.id, order);
-        addedCount++;
-      }
-    }
-
-    const merged = Array.from(orderMap.values());
-    writeOrders(merged);
-    res.json({ success: true, total: merged.length, added: addedCount, orders: merged });
-  });
-
-  // POST /api/orders/clear-demo - Delete all demo orders from server database
-  app.post('/api/orders/clear-demo', (req, res) => {
-    const orders = readOrders();
-    const filtered = orders.filter((o) => !o.isDemo && !DEMO_IDS.has(o.id));
-    writeOrders(filtered);
-    console.log(`[Order Central] Purged demo orders. Remaining real orders: ${filtered.length}`);
-    res.json({ success: true, remaining: filtered.length, orders: filtered });
   });
 
   // GET /api/orders/track - Track order by query

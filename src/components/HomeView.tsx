@@ -50,7 +50,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   };
 
   // Flagship saree
-  const flagshipSaree = products.find((p) => p.id === 'zv-01') || products[0];
+  const flagshipSaree = products.find((p) => p.id === 'zv-trend-04') || products.find((p) => p.category === 'sarees') || products[0];
 
   // Featured Collection direct bestselling products
   const featuredProducts = React.useMemo(() => {
