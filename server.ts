@@ -571,11 +571,12 @@ async function startServer() {
   }) || path.join(process.cwd(), 'dist');
 
   // SEO Handlers for sitemap.xml and robots.txt
-  app.get('/sitemap.xml', (req, res) => {
+  app.get(['/sitemap.xml', '/sitemap_index.xml'], (req, res) => {
+    const filename = req.path.endsWith('sitemap_index.xml') ? 'sitemap_index.xml' : 'sitemap.xml';
     const candidatePaths = [
-      path.join(distPath, 'sitemap.xml'),
-      path.join(process.cwd(), 'public', 'sitemap.xml'),
-      path.join(serverDirname, '..', 'public', 'sitemap.xml'),
+      path.join(distPath, filename),
+      path.join(process.cwd(), 'public', filename),
+      path.join(serverDirname, '..', 'public', filename),
     ];
     const sitemapFile = candidatePaths.find((p) => fs.existsSync(p));
     if (sitemapFile) {
