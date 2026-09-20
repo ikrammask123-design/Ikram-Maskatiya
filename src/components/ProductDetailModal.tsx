@@ -753,7 +753,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <div className="mt-3 text-center">
               <a
                 id="btn-modal-whatsapp-inquiry"
-                href={`https://wa.me/918238023498?text=${encodeURIComponent(
+                href={`https://wa.me/918320144742?text=${encodeURIComponent(
                   `Namaste! 🙏 I am interested in ordering: *${product.name}* (Price: ₹${product.price}${
                     selectedColor ? `, Color/Shade: ${selectedColor}` : ''
                   }${selectedSize ? `, Size: ${selectedSize}` : ''}${

@@ -458,7 +458,7 @@ export default function App() {
       />
 
       {/* Floating 1-Click WhatsApp Support Widget */}
-      <FloatingWhatsApp phoneNumber="918238023498" />
+      <FloatingWhatsApp phoneNumber="918320144742" />
 
       {/* Vercel Speed Insights */}
       <SpeedInsights />

@@ -172,7 +172,7 @@ export const TrackOrderModal: React.FC<TrackOrderModalProps> = ({
     const text = encodeURIComponent(
       `Hello Zevioza Concierge, I want an update regarding my Order #${order.id} for ${order.items.map((i) => i.name).join(', ')}. Tracking: ${order.trackingNumber || 'Pending'}. Please advise estimated arrival.`
     );
-    window.open(`https://wa.me/918238023498?text=${text}`, '_blank');
+    window.open(`https://wa.me/918320144742?text=${text}`, '_blank');
   };
 
   useEffect(() => {
@@ -631,7 +631,7 @@ export const TrackOrderModal: React.FC<TrackOrderModalProps> = ({
                     const text = encodeURIComponent(
                       `Hello Zevioza Support, I am unable to track my order for query '${searchQuery}'. Please help me locate my booking.`
                     );
-                    window.open(`https://wa.me/918238023498?text=${text}`, '_blank');
+                    window.open(`https://wa.me/918320144742?text=${text}`, '_blank');
                   }}
                   className="inline-flex items-center gap-1.5 bg-[#6d0026] text-white text-xs font-semibold px-4 py-2 rounded-xl"
                 >

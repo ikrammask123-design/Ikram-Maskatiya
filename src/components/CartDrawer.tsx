@@ -444,7 +444,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         `\nPlease confirm order acceptance and dispatch schedule!`
     );
 
-    window.open(`https://wa.me/918238023498?text=${message}`, '_blank');
+    window.open(`https://wa.me/918320144742?text=${message}`, '_blank');
   };
 
   const handleFinishSuccess = () => {

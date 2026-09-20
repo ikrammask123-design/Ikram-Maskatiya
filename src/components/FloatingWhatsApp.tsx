@@ -6,7 +6,7 @@ interface FloatingWhatsAppProps {
 }
 
 export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({
-  phoneNumber = '918238023498',
+  phoneNumber = '918320144742',
 }) => {
   const [showTooltip, setShowTooltip] = useState(true);
 
@@ -65,7 +65,7 @@ export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({
         target="_blank"
         rel="noopener noreferrer"
         className="group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-full shadow-lg hover:shadow-emerald-500/30 transition-all duration-300 ring-4 ring-white/80"
-        title="Chat on WhatsApp (+91 8238023498)"
+        title="Chat on WhatsApp (+91 83201 44742)"
         aria-label="Direct WhatsApp Concierge"
       >
         <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
@@ -84,7 +84,7 @@ export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({
 
         {/* Hover tag on desktop */}
         <span className="hidden group-hover:block absolute right-full mr-3 whitespace-nowrap bg-stone-900 text-white text-xs font-medium py-1.5 px-3 rounded-xl shadow-lg transition-all">
-          Chat on WhatsApp (+91 8238023498)
+          Chat on WhatsApp (+91 83201 44742)
         </span>
       </a>
     </div>

@@ -240,7 +240,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
       `\nCustomer:\n${order.customer.name}\n${order.customer.phone}\n${order.customer.address}, ${order.customer.city} - ${order.customer.pincode}\n\n` +
       `Items:\n${itemsList}\n\n` +
       `Total: ₹${order.total}\n\n` +
-      `Boutique Support: +91 82380 23498 | Email: ${OWNER_EMAIL}\n`
+      `Boutique Support: +91 83201 44742 | Email: ${OWNER_EMAIL}\n`
     );
 
     const recipient = order.customer.email ? `${order.customer.email},${OWNER_EMAIL}` : OWNER_EMAIL;
@@ -515,7 +515,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
   const handleOpenWhatsAppModal = (order: StoreOrder) => {
     setWhatsAppModalOrder(order);
     const digits = order.customer.phone.replace(/\D/g, '');
-    const isOwnerPhone = digits.endsWith('8238023498');
+    const isOwnerPhone = digits.endsWith('8320144742') || digits.endsWith('8238023498');
 
     // If it's the owner's phone or invalid placeholder, clear or flag it
     setWhatsAppTargetPhone(isOwnerPhone ? '' : order.customer.phone);
@@ -523,7 +523,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
     setWhatsAppCustomText('');
     setWhatsAppPhoneError(
       isOwnerPhone
-        ? '⚠️ Is order mein boutique ka support number (82380 23498) save tha. Kripya customer ka actual WhatsApp mobile number enter karein.'
+        ? '⚠️ Is order mein boutique ka support number (83201 44742) save tha. Kripya customer ka actual WhatsApp mobile number enter karein.'
         : ''
     );
   };
@@ -588,9 +588,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
       return;
     }
 
-    if (digits.endsWith('8238023498')) {
+    if (digits.endsWith('8320144742') || digits.endsWith('8238023498')) {
       setWhatsAppPhoneError(
-        '⚠️ Yeh number aapka apna store number (82380 23498) hai! Kripya customer ka mobile number daliye taaki message customer ko jaye, aapko nahi.'
+        '⚠️ Yeh number aapka apna store number (83201 44742) hai! Kripya customer ka mobile number daliye taaki message customer ko jaye, aapko nahi.'
       );
       return;
     }
@@ -2043,11 +2043,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToStore, currency 
                   />
                 </div>
 
-                {whatsAppTargetPhone.replace(/\D/g, '').endsWith('8238023498') ? (
+                {whatsAppTargetPhone.replace(/\D/g, '').endsWith('8320144742') || whatsAppTargetPhone.replace(/\D/g, '').endsWith('8238023498') ? (
                   <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[11px] flex items-start gap-2">
                     <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                     <div>
-                      <strong>⚠️ Dhyan Dein:</strong> Yeh number aapka apna store number (82380 23498) hai! Kripya yahan customer ka actual WhatsApp mobile number likhein taaki message customer ke phone par jaye, aapke nahi.
+                      <strong>⚠️ Dhyan Dein:</strong> Yeh number aapka apna store number (83201 44742) hai! Kripya yahan customer ka actual WhatsApp mobile number likhein taaki message customer ke phone par jaye, aapke nahi.
                     </div>
                   </div>
                 ) : null}
