@@ -15,6 +15,17 @@ export const StylistModal: React.FC<StylistModalProps> = ({ isOpen, onClose }) =
   const [notes, setNotes] = useState('');
   const [confirmed, setConfirmed] = useState(false);
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -23,7 +34,14 @@ export const StylistModal: React.FC<StylistModalProps> = ({ isOpen, onClose }) =
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+    >
       <div className="bg-[#fcf9f8] w-full max-w-lg rounded-2xl shadow-2xl border border-[#debfc2]/40 overflow-hidden relative">
         <button
           onClick={onClose}

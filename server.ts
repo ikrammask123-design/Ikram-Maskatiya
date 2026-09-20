@@ -369,14 +369,42 @@ async function startServer() {
     try {
       const result = await createShiprocketOrder(order);
       if (result.success && result.shipment_id) {
+        // Attempt automatic courier assignment & AWB generation for zero-manual effort
+        let autoAwbData: any = null;
+        try {
+          autoAwbData = await assignCourierAndAwb({ order, shipmentId: result.shipment_id });
+        } catch (awbErr: any) {
+          console.warn('[Shiprocket] Auto AWB assignment pending:', awbErr?.message || awbErr);
+        }
+
         // Update order in server storage
         const orders = readOrders();
         const idx = orders.findIndex((o) => o.id === order.id);
         if (idx >= 0) {
           orders[idx].shiprocketOrderId = result.order_id;
           orders[idx].shiprocketShipmentId = result.shipment_id;
-          orders[idx].shiprocketStatus = result.status || 'NEW';
+          orders[idx].shiprocketStatus = autoAwbData?.awb_code ? 'SHIPPED' : (result.status || 'NEW');
+
+          if (autoAwbData?.awb_code) {
+            orders[idx].trackingNumber = autoAwbData.awb_code;
+            orders[idx].courierPartner = autoAwbData.courier_name;
+            orders[idx].shiprocketAwb = autoAwbData.awb_code;
+            orders[idx].shiprocketCourier = autoAwbData.courier_name;
+            orders[idx].shiprocketTrackingUrl = autoAwbData.tracking_url;
+            orders[idx].fulfillmentStatus = 'shipped';
+
+            // Automatically record notification log
+            recordWaLog(orders[idx], 'ORDER_SHIPPED');
+          }
           writeOrders(orders);
+        }
+
+        if (autoAwbData && autoAwbData.awb_code) {
+          return res.json({
+            ...result,
+            ...autoAwbData,
+            autoDispatched: true,
+          });
         }
       }
       res.json(result);

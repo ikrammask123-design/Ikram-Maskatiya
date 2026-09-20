@@ -68,6 +68,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           alt={product.name}
           className="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-105"
           loading="lazy"
+          decoding="async"
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (!target.src.includes('unsplash.com')) {
+              target.src = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80';
+            }
+          }}
         />
 
         {/* Wishlist Button */}

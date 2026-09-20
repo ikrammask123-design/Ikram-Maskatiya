@@ -134,6 +134,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     }
   }, [product]);
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isLightboxOpen) {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLightboxOpen]);
+
   if (!product) return null;
 
   const handleColorSelect = (col: string) => {
@@ -228,10 +238,34 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     }
   };
 
+  const handleClose = () => {
+    try {
+      const url = new URL(window.location.href);
+      let changed = false;
+      ['product', 'p', 'item'].forEach((k) => {
+        if (url.searchParams.has(k)) {
+          url.searchParams.delete(k);
+          changed = true;
+        }
+      });
+      if (changed || url.hash.startsWith('#product')) {
+        const cleanHash = url.hash.startsWith('#product') ? '' : url.hash;
+        const newUrl = url.pathname + (url.search ? url.search : '') + cleanHash;
+        window.history.replaceState(null, '', newUrl);
+      }
+    } catch {}
+    onClose();
+  };
+
   return (
     <>
       <div
         id="product-detail-modal-overlay"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            handleClose();
+          }
+        }}
         className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
       >
         <div
@@ -241,7 +275,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           {/* Close Button */}
           <button
             id="btn-close-modal"
-            onClick={onClose}
+            onClick={handleClose}
             className="absolute top-4 right-4 z-20 bg-white/80 hover:bg-white text-[#574144] p-2 rounded-full shadow-md backdrop-blur-md transition-all focus:outline-none"
             aria-label="Close product view"
           >

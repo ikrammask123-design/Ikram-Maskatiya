@@ -333,6 +333,25 @@ export async function assignCourierAndAwb(params: {
           const courier = data.response.data.courier_name || 'Shiprocket Express';
           const trackUrl = `https://shiprocket.co/tracking/${awb}`;
 
+          // Automatically schedule courier pickup from seller's registered address
+          try {
+            const pickupRes = await safeFetchShiprocket(`${SHIPROCKET_BASE_URL}/courier/generate/pickup`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                shipment_id: [shipmentId],
+              }),
+            });
+            if (pickupRes.ok) {
+              console.log(`[Shiprocket] Pickup automatically scheduled for shipment ${shipmentId}`);
+            }
+          } catch (pickupErr) {
+            console.warn('[Shiprocket] Auto pickup schedule background note:', pickupErr);
+          }
+
           return {
             success: true,
             awb_code: awb,

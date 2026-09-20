@@ -22,6 +22,17 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 }) => {
   const [query, setQuery] = useState('');
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const popularSearches = [
@@ -50,6 +61,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   return (
     <div
       id="search-modal-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
       className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-start justify-center pt-16 sm:pt-24 p-4"
     >
       <div className="bg-[#fcf9f8] w-full max-w-2xl rounded-2xl shadow-2xl border border-[#debfc2]/40 overflow-hidden animate-scaleUp">

@@ -175,8 +175,28 @@ export const TrackOrderModal: React.FC<TrackOrderModalProps> = ({
     window.open(`https://wa.me/918238023498?text=${text}`, '_blank');
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 font-body">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 font-body"
+    >
       <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#debfc2]/60 relative flex flex-col">
         {/* Header Strip */}
         <div className="bg-gradient-to-r from-[#6d0026] via-[#8e1b3b] to-[#450017] text-white px-6 py-5 rounded-t-3xl relative">

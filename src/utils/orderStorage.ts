@@ -10,6 +10,7 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { directShiprocketDispatch } from './shiprocketDirect';
+import { sendAutomatedWhatsAppNotification } from './whatsappAutomation';
 
 const STORAGE_KEY = 'zevioza_store_orders_v1';
 
@@ -340,15 +341,27 @@ export async function saveOrderToStoreAsync(order: StoreOrder): Promise<void> {
       })
       .then((srData) => {
         if (srData && srData.success && srData.shipment_id) {
-          console.log(`[Shiprocket Sync] Shipment registered: ID ${srData.shipment_id}`);
+          console.log(`[Shiprocket Sync] Shipment registered: ID ${srData.shipment_id}, AWB: ${srData.awb_code || 'Pending'}`);
+
+          const updatePayload: Record<string, any> = {
+            shiprocketOrderId: srData.order_id,
+            shiprocketShipmentId: srData.shipment_id,
+            shiprocketStatus: srData.awb_code ? 'SHIPPED' : (srData.status || 'NEW'),
+          };
+
+          if (srData.awb_code) {
+            updatePayload.trackingNumber = srData.awb_code;
+            updatePayload.courierPartner = srData.courier_name || 'Shiprocket Express';
+            updatePayload.shiprocketAwb = srData.awb_code;
+            updatePayload.shiprocketCourier = srData.courier_name || 'Shiprocket Express';
+            updatePayload.shiprocketTrackingUrl = srData.tracking_url;
+            updatePayload.fulfillmentStatus = 'shipped';
+          }
+
           // Update Firestore
           setDoc(
             doc(db, 'orders', order.id),
-            cleanForFirestore({
-              shiprocketOrderId: srData.order_id,
-              shiprocketShipmentId: srData.shipment_id,
-              shiprocketStatus: srData.status || 'NEW',
-            }),
+            cleanForFirestore(updatePayload),
             { merge: true }
           ).catch(() => {});
 
@@ -358,14 +371,20 @@ export async function saveOrderToStoreAsync(order: StoreOrder): Promise<void> {
             o.id === order.id
               ? {
                   ...o,
-                  shiprocketOrderId: srData.order_id,
-                  shiprocketShipmentId: srData.shipment_id,
-                  shiprocketStatus: srData.status || 'NEW',
+                  ...updatePayload,
                 }
               : o
           );
           localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
           window.dispatchEvent(new CustomEvent('zevioza_order_updated'));
+
+          // If AWB was generated automatically, trigger automated WhatsApp shipping message with live tracking
+          if (srData.awb_code) {
+            const freshOrder = updated.find((o) => o.id === order.id);
+            if (freshOrder) {
+              sendAutomatedWhatsAppNotification(freshOrder, 'ORDER_SHIPPED').catch(console.warn);
+            }
+          }
         }
       })
       .catch((err) => console.warn('[Shiprocket] Auto-create order background notice:', err));
