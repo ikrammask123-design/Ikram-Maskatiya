@@ -570,6 +570,37 @@ async function startServer() {
     }
   }) || path.join(process.cwd(), 'dist');
 
+  // SEO Handlers for sitemap.xml and robots.txt
+  app.get('/sitemap.xml', (req, res) => {
+    const candidatePaths = [
+      path.join(distPath, 'sitemap.xml'),
+      path.join(process.cwd(), 'public', 'sitemap.xml'),
+      path.join(serverDirname, '..', 'public', 'sitemap.xml'),
+    ];
+    const sitemapFile = candidatePaths.find((p) => fs.existsSync(p));
+    if (sitemapFile) {
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.sendFile(sitemapFile);
+    } else {
+      res.status(404).send('Sitemap not found');
+    }
+  });
+
+  app.get('/robots.txt', (req, res) => {
+    const candidatePaths = [
+      path.join(distPath, 'robots.txt'),
+      path.join(process.cwd(), 'public', 'robots.txt'),
+      path.join(serverDirname, '..', 'public', 'robots.txt'),
+    ];
+    const robotsFile = candidatePaths.find((p) => fs.existsSync(p));
+    if (robotsFile) {
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.sendFile(robotsFile);
+    } else {
+      res.status(404).send('Robots.txt not found');
+    }
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },

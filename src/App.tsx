@@ -74,6 +74,24 @@ export default function App() {
           setSelectedProductModal(found);
           setActiveTab('korean-store');
         }
+      } else {
+        // Deep link for category paths or ?category=...
+        const pathSlug = pathname.replace(/^\//, '').replace(/\/$/, '').toLowerCase();
+        const catQuery = (searchParams.get('category') || searchParams.get('c') || pathSlug).toLowerCase();
+        const categoryMap: Record<string, CategoryId> = {
+          sarees: 'sarees',
+          kurtis: 'kurtis',
+          dresses: 'dresses',
+          'lehenga-choli': 'lehenga-choli',
+          lehengas: 'lehenga-choli',
+          lehenga: 'lehenga-choli',
+          accessories: 'accessories',
+          bridal: 'bridal',
+        };
+        if (categoryMap[catQuery]) {
+          setSelectedCategory(categoryMap[catQuery]);
+          setActiveTab('categories');
+        }
       }
 
       // Helper to find product by id with legacy alias support
